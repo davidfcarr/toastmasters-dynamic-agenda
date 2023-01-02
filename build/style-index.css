@@ -1,0 +1,82 @@
+/*!***************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[3].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[3].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[3].use[3]!./src/style.scss ***!
+  \***************************************************************************************************************************************************************************************************************************************/
+/**
+ * The following styles get applied both on the front of your site
+ * and in the editor.
+ *
+ * Replace them with your own styles or remove the file completely.
+ */
+.wp-block-create-block-toastmasters-dynamic-agenda {
+  background-color: #21759b;
+  color: #fff;
+  padding: 2px;
+}
+
+.tm-notification {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: 600px;
+  color: #fff;
+  padding: 2px;
+  animation-name: fadeOut;
+  animation-delay: 2s;
+  animation-duration: 5s;
+  border: medium solid darkblue;
+  z-index: 10;
+}
+
+.tm-notification-success {
+  background-color: #21759b;
+}
+
+.tm-notification-error {
+  background-color: red;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+button.tmform {
+  display: inline-block;
+  margin-right: 15px;
+  padding: 10px;
+  vertical-align: middle;
+  background-color: #004165;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 10%;
+  border: thin solid #444165;
+}
+
+button.tmform:hover {
+  color: #004165;
+  background-color: #F2DF74;
+}
+
+.tmflexrow {
+  display: flex;
+  gap: 20px;
+  align-items: top;
+}
+
+.rb {
+  padding: 5px;
+  margin: 5px;
+  border: medium solid #aaa;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #000;
+}
+
+.rb:hover {
+  border: medium solid #000;
+}
+
+/*# sourceMappingURL=style-index.css.map*/
