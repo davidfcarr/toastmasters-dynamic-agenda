@@ -79,4 +79,8 @@ button.tmform:hover {
   border: medium solid #000;
 }
 
+.radio-mode .components-flex {
+  flex-flow: row;
+}
+
 /*# sourceMappingURL=style-index.css.map*/

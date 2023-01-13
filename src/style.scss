@@ -58,9 +58,9 @@ button.tmform:hover {
 	gap: 20px;
 	align-items: top;
 }
-.tmflex50 {
+//.tmflex50 {
 	//width: 45%;
-}
+//}
 .rb {
 	padding: 5px;
 	margin: 5px;
@@ -72,3 +72,7 @@ button.tmform:hover {
 .rb:hover {
 	border: medium solid #000;
 }
+.radio-mode .components-flex {
+	flex-flow: row;
+}
+

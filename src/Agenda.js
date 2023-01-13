@@ -43,7 +43,7 @@ export default function Agenda() {
                 if(!block.blockName || (block.blockName != 'wp4toastmasters/role') || ignore.includes(block.blockName))
                     return null;
                 
-                return <div id={'block'+blockindex}><RoleBlock current_user_id={agenda.current_user_id} setAgenda={setAgenda} setUpdated={setUpdated} post_id={post_id} role={block.attrs.role} count={block.attrs.count} time_allowed={block.attrs.time_allowed} padding_time={block.attrs.padding_time} backup={block.attrs.backup} assignments={block.assignments} /></div>
+                return <div id={'block'+blockindex}><RoleBlock blockindex={blockindex} current_user_id={agenda.current_user_id} setAgenda={setAgenda} setUpdated={setUpdated} post_id={post_id} role={block.attrs.role} count={block.attrs.count} time_allowed={block.attrs.time_allowed} padding_time={block.attrs.padding_time} backup={block.attrs.backup} assignments={block.assignments} editor={agenda.editor} /></div>
 
                 if(raw.includes(block.blockName))
                     {
