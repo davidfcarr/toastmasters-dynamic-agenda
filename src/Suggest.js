@@ -13,7 +13,6 @@ export default function Suggest(props) {
     setNotification({'message':message,'error':error,'rawHTML':''});
     setTimeout(() => {
         setNotification(null);
-        props.setSuggest(false);
     },5000);
 }
 
@@ -66,8 +65,8 @@ function send() {
         }}
       />
       <RadioControl selected={ccme} label="Send To" onChange={(value)=> setCcme(value)} options={[{'label': 'Member', 'value':'0'},{'label': 'Member + CC me', 'value':'1'},{'label': 'Me Only', 'value':'2'}]}/>
-      <p><button className="tmform" type="primary" onClick={send}>Send Suggestion</button></p>
-      {notification && <div className={notification.error ? "tm-notification tm-notification-error suggestion-notification": "tm-notification tm-notification-success suggestion-notification"}>{notification.message}</div>}
+      {!notification && <p><button className="tmform" type="primary" onClick={send}>Send Suggestion</button></p>}
+      {notification && <><p>Sent!</p><div className={notification.error ? "tm-notification tm-notification-error suggestion-notification": "tm-notification tm-notification-success suggestion-notification"}>{notification.message}</div></>}
     </>
   );
 }

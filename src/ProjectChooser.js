@@ -45,7 +45,7 @@ export default function ProjectChooser(props) {
     function updateSpeech() {
         console.log(props);
         console.log('update speech for '+props.assignment.ID);
-        props.updateAssignment({'role': 'Speaker', 'ID': props.assignment.ID,'roleindex':props.roleindex,'blockindex':props.blockindex,'manual':manual,'project':project,'title':title,'intro':editorRef.current.getContent()});
+        props.updateAssignment({'role': 'Speaker', 'ID': props.assignment.ID,'roleindex':props.roleindex,'blockindex':props.blockindex,'manual':manual,'project':project,'title':title,'intro':editorRef.current.getContent(),'start':props.attrs.start});
     }
     
     if(!choices || typeof choices.manuals == 'undefined')
