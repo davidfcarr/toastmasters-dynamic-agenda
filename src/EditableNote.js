@@ -30,25 +30,8 @@ function onError(e) {
 }
 
   const editEditable = useMutation(
-      (assignment) => { apiClient.post("editable_note_json", edit)},
-      {      
-        // Optimistically update the cache value on mutate, but store
-        // the old value and return it so that it's accessible in case of
-        // an error
-        //,blockindex,roleindex
-        onMutate: async (edit) => {
-          await queryClient.cancelQueries('editable');
-  
-          const previousValue = queryClient.getQueryData("editable");
-  
-          // 성공한다고 가정하고 todos 데이터 즉시 업데이트.
-          queryClient.setQueryData("blocks-data", (old) => { 
-              old.data = edit;
-              return ({...old})
-      })
-  
-          return previousValue;
-        },
+      (edit) => { apiClient.post("editable_note_json", edit)},
+      {
         // On failure, roll back to the previous value
         onError: (err, variables, previousValue) => {
           console.log('mutate assignment error');
@@ -57,7 +40,6 @@ function onError(e) {
         },
         // After success or failure, refetch the todos query
         onSuccess: () => {
-          queryClient.invalidateQueries("editable");
           makeNotification('Updated editable note');
         }
       }

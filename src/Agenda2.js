@@ -8,7 +8,7 @@ import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
 
-export default function Agenda2() {
+export default function Agenda() {
     let initialPost = 0;
     if('rsvpmaker' == wpt_rest.post_type) {
         initialPost = wpt_rest.post_id;
@@ -199,20 +199,21 @@ export default function Agenda2() {
         if(direction == 'up')
             newposition = moveableBlocks[foundindex - 1];
         else if(direction == 'down')
-            newposition = moveableBlocks[foundindex + 2];
+            newposition = moveableBlocks[foundindex + 1];
         if(direction == 'delete') {
             console.log('delete from '+blockindex);
-            data.blocksdata.splice(blockindex,2);
+            data.blocksdata.splice(blockindex,1);
         }
         else {
-            console.log('new position:'+newposition+' from '+blockindex);
+            console.log('reorg new position:'+newposition+' from '+blockindex);
             let currentblock = data.blocksdata[blockindex];
             data.blocksdata.splice(newposition,0,currentblock,{'blockName':null,'attrs':[],'innerBlocks':[],'innerContent':"\n\n",'innerHTML':"\n\n"}); 
             
-            let deletefrom = (newposition > blockindex) ? blockindex : blockindex + 2;
-            console.log('move '+blockindex+' to '+newposition+' delete from '+deletefrom);
-            console.log('delete from '+deletefrom);
-            data.blocksdata.splice(deletefrom,2);    
+            let deletefrom = (newposition > blockindex) ? blockindex : blockindex + 1;
+            console.log('reorg move '+blockindex+' to '+newposition+' delete from '+deletefrom);
+            console.log('reorg delete from '+deletefrom);
+            data.blocksdata.splice(deletefrom,2);
+            console.log('reorg',data.blocksdata);    
         }
         console.log('move blocks, new blocks',data.blocksdata);
         
@@ -296,7 +297,7 @@ function NextMeetingPrompt() {
         //(notification.findIndex(() => 'Assignment updated') > -1)
 
 function ModeControl() {
-    const modeoptions = (data.user_can_edit_post) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Reorganize', 'value':'reorganize'},{'label': 'Insert/Delete', 'value':'insertdelete'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
+    const modeoptions = (data.user_can_edit_post) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Reorganize', 'value':'reorganize'},{'label': 'Insert/Delete', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
 
     return (
     <div id="fixed-mode-control">
@@ -334,7 +335,7 @@ function ModeControl() {
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
                     {('reorganize' == mode) && <p><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button> <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button></p>}
                     {('reorganize' == mode) && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}
-                    {('insertdelete' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}
+                    {('reorganize' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}
                     </div>)
                 }
                 //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}

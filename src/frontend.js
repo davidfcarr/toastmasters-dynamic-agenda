@@ -11,7 +11,7 @@ window.addEventListener('load', function(event) {
         ReactDOM.render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
-            <Agenda2 />
+            <Agenda />
             <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
         </QueryClientProvider>
   </React.StrictMode>,

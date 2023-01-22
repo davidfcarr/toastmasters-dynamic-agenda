@@ -48,6 +48,20 @@
     opacity: 0;
   }
 }
+.agendawrapper {
+  color: #000;
+  background-color: #fff;
+  padding: 10px;
+}
+
+.agendawrapper a {
+  color: blue;
+}
+
+.wp-block-post-content .agendawrapper a:where(:not(.wp-element-button)) {
+  color: blue;
+}
+
 button.tmform {
   display: inline-block;
   margin-right: 15px;
@@ -110,6 +124,8 @@ button.blockmove:hover {
 }
 
 #fixed-mode-control {
+  color: #000;
+  background-color: #fff;
   position: fixed;
   bottom: 0;
   left: 0;

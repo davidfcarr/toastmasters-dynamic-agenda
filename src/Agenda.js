@@ -21,7 +21,9 @@ export default function Agenda() {
     const [current_user_id,setCurrentUserId] = useState(0);
     const [mode, setMode] = useState('signup');
     const [updating, setUpdating] = useState('');
-
+    const [newtemplate, setNewTemplate] = useState(0);
+    const [allowEditStructure, setAllowEditStructure] = useState(false);
+    
     const queryClient = useQueryClient();
     const { isLoading, isSuccess, isError, data:axiosdata, error, refetch} =
     useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 10000 });
@@ -36,7 +38,7 @@ export default function Agenda() {
                     console.log('assignment update success',data);
                     queryClient.setQueryData("blocks-data", data);
                     queryClient.invalidateQueries('blocks-data');
-                    makeNotification('Updated assignment');
+                    makeNotification('Updated assignment',data.data.prompt);
                 },
                 onError: (err, variables, context) => {
                     console.log('mutate assignment error',err);
@@ -62,13 +64,17 @@ export default function Agenda() {
               },
             } );
     
-    function updateAgendaPost (agenda) {
-        return apiClient.post('update_agenda', agenda);
+    async function updateAgendaPost (agenda) {
+        return await apiClient.post('update_agenda', agenda);
     }
 
     const updateAgenda = useMutation(updateAgendaPost, {
             onSuccess: (data, error, variables, context) => {
                 queryClient.invalidateQueries('blocks-data');
+                //queryClient.setQueryData("blocks-data", data);
+                makeNotification('Updated agenda blocks');
+                if(Inserter.setInsert)
+                    Inserter.setInsert('');
             }    
           }
     )
@@ -100,7 +106,7 @@ export default function Agenda() {
         console.log('moveable',moveableBlocks);
         let newposition = moveableBlocks[0];//move to top
         let foundindex = moveableBlocks.indexOf(blockindex);
-        console.log('found index '+foundindex+' for blockindex' + blockindex)
+        console.log('reorg found index '+foundindex+' for blockindex' + blockindex)
         if(direction == 'up')
             newposition = moveableBlocks[foundindex - 1];
         else if(direction == 'down')
@@ -110,33 +116,32 @@ export default function Agenda() {
             data.blocksdata.splice(blockindex,2);
         }
         else {
-            console.log('new position:'+newposition+' from '+blockindex);
+            console.log('reorg new position:'+newposition+' from '+blockindex);
+            console.log('reorg move blocks, current blocks',data.blocksdata);
             let currentblock = data.blocksdata[blockindex];
-            data.blocksdata.splice(newposition,0,currentblock,{'blockName':null,'attrs':[],'innerBlocks':[],'innerContent':"\n\n",'innerHTML':"\n\n"}); 
-            
-            let deletefrom = (newposition > blockindex) ? blockindex : blockindex + 2;
-            console.log('move '+blockindex+' to '+newposition+' delete from '+deletefrom);
-            console.log('delete from '+deletefrom);
-            data.blocksdata.splice(deletefrom,2);    
+            data.blocksdata[blockindex] = {'blockName':null};
+            data.blocksdata.splice(newposition,0,currentblock);
+            console.log('reorg move '+blockindex+' to '+newposition);
         }
-        console.log('move blocks, new blocks',data.blocksdata);
+        console.log('reorg move blocks, new blocks',data.blocksdata);
         
         data.changed = 'blocks';
         updateAgenda.mutate(data);
     }
 
-    function insertBlock(blockindex, attributes={}, blockname = 'wp4toastmasters/role') {
+    function insertBlock(blockindex, attributes={}, blockname = 'wp4toastmasters/role',innerHTML) {
         let newblocks = [];
         data.blocksdata.forEach(
             (block, index) => {
                 newblocks.push(block);
                 if(index == blockindex) {
-                    newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes});
+                    newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML});
                 }
             }
         );
         data.blocksdata = newblocks;
         updateAgenda.mutate(data);
+        
     }
 
     function replaceBlock(blockindex, newblock) {
@@ -181,10 +186,10 @@ export default function Agenda() {
 
 const [notification,setNotification] = useState(null);
 const [notificationTimeout,setNotificationTimeout] = useState(null);
-function makeNotification(message, rawhtml = false) {
+function makeNotification(message, prompt = false, otherproperties = null) {
     if(notificationTimeout)
         clearTimeout(notificationTimeout);
-    setNotification(message);
+    setNotification({'message':message,'prompt':prompt,'otherproperties':otherproperties});
     let nt = setTimeout(() => {
         setNotification(null);
     },25000);
@@ -201,69 +206,115 @@ function NextMeetingPrompt() {
         //(notification.findIndex(() => 'Assignment updated') > -1)
 
 function ModeControl() {
-    const modeoptions = (data.user_can_edit_post) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Reorganize', 'value':'reorganize'},{'label': 'Insert/Delete', 'value':'insertdelete'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
+    const modeoptions = (user_can('edit_post') || user_can('edit_structure')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Insert/Delete/Reorder Blocks', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
+    if(user_can('edit_post'))
+        modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
 
     return (
     <div id="fixed-mode-control">
-        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} {notification} <NextMeetingPrompt /></div>}
+        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )}</div>}
         <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
         </div>)
 }
+    function user_can(permission) {
+        if(axiosdata.data.permissions[permission])
+            return axiosdata.data.permissions[permission];
+        else
+            return false;
+    }
 
     if(isLoading)
         return <p>Loading ...</p>;
+    if(!axiosdata.data.current_user_id) 
+        return <p>You must be logged in as a member of this website to see the signup form.</p>
 
     //console.log('current_user_id ' + agenda.current_user_id);
     const data = axiosdata.data;
     const raw = ['core/image','core/paragraph','core/heading','wp4toastmasters-signupnote']
     const ignore = ['wp4toastmasters/agendanoterich2','wp4toastmasters/milestone','wp4toastmasters/help']
+    let date = new Date(data.datetime);
+    let timestamp = date.getMilliseconds();
+    let datestring = '';
     if(!post_id)
         setPostId(data.post_id);
     if(!current_user_id)
         setCurrentUserId(data.current_user_id);
 
+
     console.log('data for agenda return', data);
+    const moveableBlocks = getMoveAbleBlocks ();
+
+    if('settings' == mode)
+    {
+        let templates = data.upcoming.map((item) => {if(item.label.indexOf('emplate')) return item});
+        templates.push({'value':0,'label':'Choose Template'});
+        return(
+            <div className="agendawrapper">
+            <ModeControl />
+            <h2>Template Options and Settings</h2>
+            <>{data.has_template && <div><p><button className="tmform" onClick={() => { makeNotification('Template updated (not really, still a demo).',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
+            <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+post_id}>Create/Update</a></p>}</>
+            <SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
+            <p><button className="tmform" onClick={() => { makeNotification('This does not work yet') }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
+            <>{user_can('manage_options') && (
+            <div className="adminonly"><h3>Admin Only Options Go Here</h3><p><ToggleControl label="Allow Regular Members to Edit Agenda Structure" checked={ allowEditStructure }
+            onChange={ () => {
+                setAllowEditStructure( ( state ) => ! state );
+            } } /></p><p><em>If this is not set, only editors will be able to add, delete, or rearrange role and note blocks on a meeting agenda. Even with this turned on, only editors and administrators will have access to this Template Options and Settings screen.</em></p></div>)}</>
+            </div>
+        );
+    }
 
     return (
         <div className="agendawrapper">
             {('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => setPostId(parseInt(value))} />}
             <ModeControl />
             {data.blocksdata.map((block, blockindex) => {
+                datestring = date.toLocaleTimeString('en-US');
+                if(block?.attrs?.time_allowed) {
+                    timestamp += (block.attrs.time_allowed * 60000);
+                    date.setMilliseconds(timestamp);
+                    datestring = datestring+' to '+ date.toLocaleTimeString('en-US');
+                }
                 if(!block.blockName)
                     return;
                 if('wp4toastmasters/role' == block.blockName) {
                     block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                    <p>{block.assignments.map( (item) => {return item.name }).join(', ')}</p>
+                    <div><strong>{datestring}</strong></div>
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                    {('reorganize' == mode) && <p><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button> <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button></p>}
+                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
                     {('reorganize' == mode) && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}
-                    {('insertdelete' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}
+                    {('reorganize' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}
                     </div>)
                 }
                 //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}
                 if('wp4toastmasters/agendanoterich2' == block.blockName && ('reorganize' == mode)) {
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
                     <SanitizedHTML innerHTML={block.innerHTML} />
-                    <p><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move Down</button> <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move Up</button> {("wp4toastmasters/role" == block.blockName) && block.attrs.count}</p>
+                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
                     </div>)
                 }
-                if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && data.user_can_edit_post ) {
+                if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('edit_structure')) ) {
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
-                    <p><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move Down</button> <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move Up</button> {("wp4toastmasters/role" == block.blockName) && block.attrs.count}</p>
+                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
                     </div>)
                 }
                 //wp:wp4toastmasters/agendaedit {"editable":"Welcome and Introductions","uid":"editable16181528933590.29714489144034184","time_allowed":"5","inline":true}
                 if('wp4toastmasters/agendaedit' == block.blockName) {
                     if('edit' == mode) {
-                        if(data.user_can_edit_post)
+                        if((user_can('edit_post') || user_can('edit_structure')))
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} />
+                            <div><strong>{datestring}</strong></div>
+                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                            {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
                             </div>
                         );
                         else
@@ -273,7 +324,7 @@ function ModeControl() {
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} />
-                            <p><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move Down</button> <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move Up</button> {("wp4toastmasters/role" == block.blockName) && block.attrs.count}</p>
+                            <p>{('reorganize' == mode) && (blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>
                             </div>
                         );
                     }

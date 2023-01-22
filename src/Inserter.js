@@ -1,13 +1,16 @@
-import React, {useState, useEffect} from "react"
+import React, {useState, useRef} from "react"
 import { __experimentalNumberControl as NumberControl, SelectControl, ToggleControl, TextControl, RadioControl } from '@wordpress/components';
 import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
+import { Editor } from '@tinymce/tinymce-react';
 
 export function Inserter(props) {
     const [insert,setInsert] = useState(null);
-    const [att,setAtt] = useState(null);
+    const [att,setAtt] = useState({'uid':''});
     const [rolelist,setRolelist] = useState([]);
     const {blockindex, insertBlock} = props;
+    const editorRef = useRef(null);
+
     //https://delta.local/wp-json/rsvptm/v1/roles_list
     const queryClient = useQueryClient();
     
@@ -27,7 +30,8 @@ export function Inserter(props) {
     }
 
     function saveBlock () {
-        insertBlock(blockindex,att,insert);
+        const innerHTML = editorRef?.current?.getContent();
+        insertBlock(blockindex,att,insert,innerHTML);
         setInsert('');
     }
 
@@ -74,24 +78,39 @@ export function Inserter(props) {
             }
             checked={ att.backup }
             onChange={ () => {setAtt( (prev) => { return {...prev,'backup': !att.backup}; } ); }} />
-            <button onClick={() => {saveBlock()}}>Save</button>
+            <button className="blockmove" onClick={() => {saveBlock()}}>Save</button>
            </>
         )    
     }
-    if('wp4toastmasters/agendanoterich2' == insert)
-    return (
-        <>
-        <p><RadioControl className="radio-mode" selected={insert} label="Insert" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'}]}/></p>
-        <p></p>
-       </>
-    )
-    if('wp4toastmasters/agendaedit' == insert)
-    return (
-        <>
-        <p><RadioControl className="radio-mode" selected={insert} label="Insert" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'}]}/></p>
-        <p><TextControl label="heading" value=''  /></p>
-       </>
-    )
+    if('wp4toastmasters/agendanoterich2' == insert) {
+        return (
+            <>
+            <p><RadioControl className="radio-mode" selected={insert} label="Insert" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'}]}/></p>
+            <Editor
+            onInit={(evt, editor) => {setAtt( (prev) => { let newatt = {...prev,'uid':'note'+Date.now()}; return newatt; }); return editorRef.current = editor}}
+            initialValue=''
+            init={{
+              height: 100,
+              menubar: false,
+              toolbar: 'undo redo | bold italic | removeformat',
+              content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+            }}
+          />
+            <p><NumberControl label="Time Allowed" min="0" value={att?.time_allowed} onChange={(value) => {setAtt( (prev) => { let newatt = {...prev,'time_allowed':value,'uid':'note'+Date.now()}; return newatt; });  }} /></p>
+            <button className="blockmove" onClick={() => {saveBlock()}}>Save</button>
+           </>
+        )    
+    }
+    if('wp4toastmasters/agendaedit' == insert) {
+        return (
+            <>
+            <p><RadioControl className="radio-mode" selected={insert} label="Insert" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'}]}/></p>
+            <p><TextControl label="heading" value={att?.editable} onChange={ (title) => {setAtt( (prev) => {return {...prev,'editable':title,'uid':'note'+Date.now()} } )} }  /></p>
+            <p><NumberControl label="Time Allowed" min="0" value={att?.time_allowed} onChange={(value) => {setAtt( (prev) => { let newatt = {...prev,'time_allowed':value,'uid':'note'+Date.now()}; return newatt; });  }} /></p>
+            <button className="blockmove" onClick={() => {saveBlock()}}>Save</button>
+           </>
+        );    
+    }
     //just the controls
     return (
         <>
