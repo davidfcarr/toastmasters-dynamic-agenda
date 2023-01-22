@@ -20,30 +20,47 @@ export default function Agenda2() {
     const [post_id, setPostId] = useState(initialPost);
     const [current_user_id,setCurrentUserId] = useState(0);
     const [mode, setMode] = useState('signup');
+    const [updating, setUpdating] = useState('');
 
     const queryClient = useQueryClient();
     const { isLoading, isSuccess, isError, data:axiosdata, error, refetch} =
-    useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError });
+    useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 10000 });
     function fetchBlockData() {
         return apiClient.get('blocks_data/'+post_id);
     }
     
     const assignmentMutation = useMutation(
-        (assignment) => { apiClient.post("json_assignment_post", assignment)},
-        {
+            async (assignment) => { return await apiClient.post("json_assignment_post", assignment)},
+            {
+                onSuccess: (data, error, variables, context) => {
+                    console.log('assignment update success',data);
+                    queryClient.setQueryData("blocks-data", data);
+                    queryClient.invalidateQueries('blocks-data');
+                    makeNotification('Updated assignment');
+                },
+                onError: (err, variables, context) => {
+                    console.log('mutate assignment error',err);
+                    //queryClient.setQueryData("blocks-data", context.previousValue);
+                },
+            }
+        );
+
           // Optimistically update the cache value on mutate, but store
           // the old value and return it so that it's accessible in case of
           // an error
           //,blockindex,roleindex
-
+/*
         onMutate: async (assignment) => {
-        console.log('assignment object received by onMutate');
-        console.log(assignment);
+        console.log('onmutate assign ' + assignment.role+ ': '+ assignment.roleindex +' to '+assignment.name);
+        //console.log('assignment object received by onMutate', assignment);
         const {roleindex,blockindex} = assignment;
         await queryClient.cancelQueries('blocks-data');
         const previousValue = queryClient.getQueryData("blocks-data");
         queryClient.setQueryData("blocks-data", (old) => {
+            console.log('blockindex',blockindex);
+            console.log('old', old);
             old.data.blocksdata[blockindex].assignments[roleindex] = assignment;
+            console.log('assignmentMutation setQueryData', old);
             return old;//assign to query data
             console.log('old.blocksata');
             console.log(old.blocksdata);
@@ -79,66 +96,66 @@ export default function Agenda2() {
           },
   */
          // On failure, roll back to the previous value
-          onError: (err, variables, context) => {
-            console.log('mutate assignment error');
-            console.log(err);
-            queryClient.setQueryData("blocks-data", context.previousValue);
-          },
           // After success or failure, refetch the todos query
+          /*
           onSettled: () => {
-            /*
-            const {blockindex, roleindex} = data;
-            queryClient.setQueryData("blocks-data", (old) => {
-                let newblocksdata = old.data.blocksdata;
-                newblocksdata[blockindex].assignments[roleindex] = data; 
-                return {...old, 
-                    data: {...old.data, blocksdata: newblocksdata}
-                }
-            });
-            */
-            console.log('successful update, invalidating query');
+            console.log('successful assignment update, invalidating query');
             queryClient.invalidateQueries("blocks-data");
-            console.log(data);
             makeNotification('Updated assignment');
           }
-        }
-    );
+          
+        }*/
 
     const multiAssignmentMutation = useMutation(
-        (multi) => { apiClient.post("json_multi_assignment_post", multi)},
+        async (multi) => { return await apiClient.post("json_multi_assignment_post", multi)},
         {
+
+            onSuccess: (data, error, variables, context) => {
+                queryClient.invalidateQueries('blocks-data');
+                queryClient.setQueryData("blocks-data", data);
+                makeNotification('Updated assignments list');
+                console.log('Updated assignments list',data);
+            },
+            onError: (err, variables, context) => {
+                console.log('mutate assignment error');
+                console.log(err);
+                //queryClient.setQueryData("blocks-data", context.previousValue);
+              },
+            } );
+    
         
           // Optimistically update the cache value on mutate, but store
           // the old value and return it so that it's accessible in case of
           // an error
           //,blockindex,roleindex
+         /*
           onMutate: async (multi) => {
-            const {blockindex} = multi;
             await queryClient.cancelQueries('blocks-data');
-    
+            const {blockindex} = multi;    
             const previousValue = queryClient.getQueryData("blocks-data");
-    
+            multi.assignments.forEach((assignment, roleindex) => {
+                console.log('onmutate assign '+assignment.role+ ': '+roleindex+' to '+assignment.name);
+            } );
             // 성공한다고 가정하고 todos 데이터 즉시 업데이트.
             queryClient.setQueryData("blocks-data", (old) => { 
                 old.data.blocksdata[blockindex].assignments = multi.assignments;
-                return ({...old})
+                console.log('old data, new assignments',old);
+                console.log('just the assignments',old.data.blocksdata[blockindex].assignments);
+                return (old)
         })
     
             return previousValue;
           },
+
+          */
           // On failure, roll back to the previous value
-          onError: (err, variables, previousValue) => {
-            console.log('mutate assignment error');
-            console.log(err);
-            queryClient.setQueryData("blocks-data", previousValue);
-          },
           // After success or failure, refetch the todos query
-          onSettled: () => {
+/*          onSettled: () => {
             queryClient.invalidateQueries("blocks-data");
-            makeNotification('Updated assignments');
+            makeNotification('Updated assignments list');
           }
         }
-    );
+*/
 
     function updateAgendaPost (agenda) {
         return apiClient.post('update_agenda', agenda);
@@ -152,15 +169,16 @@ export default function Agenda2() {
     )
 
     function onSuccess(e) {
-        console.log(e);
         if(e.current_user_id) {
             setCurrentUserId(e.current_user_id);
             setPostId(e.post_id);
             console.log('user id on init '+e.post_id);
         }
+        setUpdating('');
+        console.log('donloaded data',e);
     }
     function onError(e) {
-        console.log(e);
+        console.log('error downloading data',e);
     }
 
     function getMoveAbleBlocks () {
@@ -174,8 +192,7 @@ export default function Agenda2() {
 
     function moveBlock(blockindex, direction = 'up') {
         let moveableBlocks = getMoveAbleBlocks();
-        console.log('moveable');
-        console.log(moveableBlocks);
+        console.log('moveable',moveableBlocks);
         let newposition = moveableBlocks[0];//move to top
         let foundindex = moveableBlocks.indexOf(blockindex);
         console.log('found index '+foundindex+' for blockindex' + blockindex)
@@ -197,7 +214,7 @@ export default function Agenda2() {
             console.log('delete from '+deletefrom);
             data.blocksdata.splice(deletefrom,2);    
         }
-        console.log(data.blocksdata);
+        console.log('move blocks, new blocks',data.blocksdata);
         
         data.changed = 'blocks';
         updateAgenda.mutate(data);
@@ -240,18 +257,19 @@ export default function Agenda2() {
         updateAgenda.mutate(data);
     }
 
-    function updateAssignment (assignment, blockindex = null, roleindex=null, start = 1) {
+    function updateAssignment (assignment, blockindex = null, start=1) {
+        setUpdating('Updating ...');
         //embed index properties if passed to the function separately
+        console.log('assignment received by updateAssignment', assignment);
+
         if(Array.isArray(assignment))
             {
-            return multiAssignmentMutation.mutate({'assignments':assignment,'blockindex':blockindex,'post_id':post_id,'start':start});
+            assignment = assignment.map((a) => { return {...a, post_id:post_id} });
+            return multiAssignmentMutation.mutate({'assignments':assignment,'blockindex':blockindex,'start':1});
             }
         else {
-        if(roleindex)
-            assignment.roleindex = roleindex;
-        if(roleindex)
-            assignment.start = roleindex;
         assignment.post_id = post_id;
+        console.log('assign '+assignment.role+':'+assignment.roleindex+' to '+assignment.ID+' '+assignment.name);
         assignmentMutation.mutate(assignment);
         }
 }
@@ -268,18 +286,6 @@ function makeNotification(message, rawhtml = false) {
     setNotificationTimeout(nt);
 }
 
-function scrolltoId(id){
-    if(!id)
-        return;
-    var access = document.getElementById(id);
-    if(!access)
-        {
-            console.log('scroll to id could not find element');
-            return;
-        }
-    access.scrollIntoView({behavior: 'smooth'}, true);
-}
-
 function NextMeetingPrompt() {
     let pid = data.upcoming.findIndex((item) => item.value == post_id);
     if(data.upcoming[pid +1])
@@ -294,7 +300,7 @@ function ModeControl() {
 
     return (
     <div id="fixed-mode-control">
-        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{notification} <NextMeetingPrompt /></div>}
+        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} {notification} <NextMeetingPrompt /></div>}
         <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
         </div>)
 }
@@ -311,6 +317,8 @@ function ModeControl() {
     if(!current_user_id)
         setCurrentUserId(data.current_user_id);
 
+    console.log('data for agenda return', data);
+
     return (
         <div className="agendawrapper">
             {('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => setPostId(parseInt(value))} />}
@@ -319,8 +327,10 @@ function ModeControl() {
                 if(!block.blockName)
                     return;
                 if('wp4toastmasters/role' == block.blockName) {
+                    block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <p>{block.assignments.map( (item) => {return item.name }).join(', ')}</p>
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
                     {('reorganize' == mode) && <p><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button> <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button></p>}
                     {('reorganize' == mode) && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}

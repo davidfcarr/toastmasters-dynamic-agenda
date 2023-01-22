@@ -23,6 +23,7 @@
 		"dompurify": "^2.4.3",
 		"react-awesome-button": "^7.0.5",
 		"react-query": "^3.39.2",
+		"react-query-devtools": "^2.6.3",
 		"react-router": "^6.6.1",
 		"react-router-dom": "^6.6.1"
 	}

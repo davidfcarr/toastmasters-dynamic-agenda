@@ -1,10 +1,10 @@
 import React from "react"
 import ReactDOM from "react-dom"
-
+import { ReactQueryDevtools } from 'react-query/devtools'
 import { QueryClient, QueryClientProvider } from "react-query";
 const queryClient = new QueryClient();
 
-import Agenda2 from "./Agenda2";
+import Agenda from "./Agenda";
 window.addEventListener('load', function(event) {
     //const agenda_root = document.getElementById('react-agenda');
     //if(agenda_root)
@@ -12,6 +12,7 @@ window.addEventListener('load', function(event) {
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
             <Agenda2 />
+            <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
         </QueryClientProvider>
   </React.StrictMode>,
         document.getElementById('react-agenda'));
