@@ -787,6 +787,7 @@ function Agenda() {
   const queryClient = (0,react_query__WEBPACK_IMPORTED_MODULE_3__.useQueryClient)();
   const {
     isLoading,
+    isFetching,
     isSuccess,
     isError,
     data: axiosdata,
@@ -1014,7 +1015,7 @@ function Agenda() {
         target: "_blank",
         href: '/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t=' + property.template_prompt
       }, "Create/Update"), " - copy content to new and existing events");
-    })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.RadioControl, {
+    }), " ", isFetching && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("em", null, "Fetching fresh data ...")), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.RadioControl, {
       className: "radio-mode",
       selected: mode,
       label: "Mode",
@@ -1033,6 +1034,12 @@ function Agenda() {
   const raw = ['core/image', 'core/paragraph', 'core/heading', 'wp4toastmasters-signupnote'];
   const ignore = ['wp4toastmasters/agendanoterich2', 'wp4toastmasters/milestone', 'wp4toastmasters/help'];
   let date = new Date(data.datetime);
+  const dateoptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  };
   let timestamp = date.getMilliseconds();
   let datestring = '';
   if (!post_id) setPostId(data.post_id);
@@ -1085,13 +1092,31 @@ function Agenda() {
     label: "Choose Event",
     value: post_id,
     options: data.upcoming,
-    onChange: value => setPostId(parseInt(value))
-  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(ModeControl, null), data.blocksdata.map((block, blockindex) => {
-    datestring = date.toLocaleTimeString('en-US');
+    onChange: value => {
+      setPostId(parseInt(value));
+      makeNotification('Date changed, please wait for the date to change ...');
+      queryClient.invalidateQueries('blocks-data');
+      refetch();
+    }
+  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h4", null, date.toLocaleDateString('en-US', dateoptions)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(ModeControl, null), data.blocksdata.map((block, blockindex) => {
+    datestring = date.toLocaleTimeString('en-US', {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true
+    });
     if (block?.attrs?.time_allowed) {
-      timestamp += block.attrs.time_allowed * 60000;
-      date.setMilliseconds(timestamp);
-      datestring = datestring + ' to ' + date.toLocaleTimeString('en-US');
+      console.log(block.blockName + ' role ' + block?.attrs?.role + ' blocktime' + date.toLocaleTimeString('en-US', {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      }));
+      console.log('blocktime add ' + block.attrs.time_allowed + ' minutes');
+      date.setMilliseconds(date.getMilliseconds() + parseInt(block.attrs.time_allowed) * 60000);
+      datestring = datestring + ' to ' + date.toLocaleTimeString('en-US', {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true
+      });
     }
     if (!block.blockName) return;
     if ('wp4toastmasters/role' == block.blockName) {
@@ -1153,13 +1178,15 @@ function Agenda() {
       })));
     }
     //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}
-    if ('wp4toastmasters/agendanoterich2' == block.blockName && 'reorganize' == mode) {
+    if ('wp4toastmasters/agendanoterich2' == block.blockName && 'edit' == mode && (user_can('edit_post') || user_can('edit_structure'))) {
       return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         key: 'block' + blockindex,
         id: 'block' + blockindex,
         className: "block"
-      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_7__.SanitizedHTML, {
-        innerHTML: block.innerHTML
+      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditorAgendaNote_js__WEBPACK_IMPORTED_MODULE_8__.EditorAgendaNote, {
+        blockindex: blockindex,
+        block: block,
+        replaceBlock: replaceBlock
       }), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
         className: "blockmove",
         onClick: () => {
@@ -1171,16 +1198,13 @@ function Agenda() {
           moveBlock(blockindex, 'down');
         }
       }, "Move ", block.attrs.role, " Role Down")));
-    }
-    if ('wp4toastmasters/agendanoterich2' == block.blockName && 'edit' == mode && (user_can('edit_post') || user_can('edit_structure'))) {
+    } else if ('wp4toastmasters/agendanoterich2' == block.blockName) {
       return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         key: 'block' + blockindex,
         id: 'block' + blockindex,
         className: "block"
-      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditorAgendaNote_js__WEBPACK_IMPORTED_MODULE_8__.EditorAgendaNote, {
-        blockindex: blockindex,
-        block: block,
-        replaceBlock: replaceBlock
+      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_7__.SanitizedHTML, {
+        innerHTML: block.innerHTML
       }), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
         className: "blockmove",
         onClick: () => {
@@ -1247,7 +1271,8 @@ function Agenda() {
           mode: mode,
           block: block,
           uid: block.attrs.uid,
-          makeNotification: makeNotification
+          makeNotification: makeNotification,
+          post_id: post_id
         }));
       }
     }
@@ -1303,6 +1328,10 @@ function EditableNote(props) {
     uid,
     time_allowed
   } = block.attrs;
+  const [querykey, setQuerykey] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)('editable' + uid + post_id);
+  (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
+    setQuerykey('editable' + uid + post_id);
+  }, [post_id]);
   function save() {
     const submitnote = {
       'note': editorRef.current.getContent(),
@@ -1318,13 +1347,13 @@ function EditableNote(props) {
     data,
     error,
     refetch
-  } = (0,react_query__WEBPACK_IMPORTED_MODULE_4__.useQuery)('editable', fetchBlockData, {
+  } = (0,react_query__WEBPACK_IMPORTED_MODULE_4__.useQuery)(querykey, fetchEditableData, {
     enabled: true,
     retry: 2,
     onSuccess,
     onError
   });
-  function fetchBlockData() {
+  function fetchEditableData() {
     return _http_common_js__WEBPACK_IMPORTED_MODULE_3__["default"].get('editable_note_json?post_id=' + post_id + '&uid=' + uid);
   }
   function onSuccess(e) {

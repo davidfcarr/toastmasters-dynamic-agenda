@@ -25,7 +25,7 @@ export default function Agenda() {
     const [allowEditStructure, setAllowEditStructure] = useState(false);
     
     const queryClient = useQueryClient();
-    const { isLoading, isSuccess, isError, data:axiosdata, error, refetch} =
+    const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
     useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 10000 });
     function fetchBlockData() {
         return apiClient.get('blocks_data/'+post_id);
@@ -212,7 +212,7 @@ function ModeControl() {
 
     return (
     <div id="fixed-mode-control">
-        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )}</div>}
+        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
         <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
         </div>)
 }
@@ -233,6 +233,7 @@ function ModeControl() {
     const raw = ['core/image','core/paragraph','core/heading','wp4toastmasters-signupnote']
     const ignore = ['wp4toastmasters/agendanoterich2','wp4toastmasters/milestone','wp4toastmasters/help']
     let date = new Date(data.datetime);
+    const dateoptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     let timestamp = date.getMilliseconds();
     let datestring = '';
     if(!post_id)
@@ -267,14 +268,16 @@ function ModeControl() {
 
     return (
         <div className="agendawrapper">
-            {('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => setPostId(parseInt(value))} />}
+            {('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries('blocks-data'); refetch();}} />}
+            <h4>{date.toLocaleDateString('en-US',dateoptions)}</h4>
             <ModeControl />
             {data.blocksdata.map((block, blockindex) => {
-                datestring = date.toLocaleTimeString('en-US');
+                datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 if(block?.attrs?.time_allowed) {
-                    timestamp += (block.attrs.time_allowed * 60000);
-                    date.setMilliseconds(timestamp);
-                    datestring = datestring+' to '+ date.toLocaleTimeString('en-US');
+                    console.log(block.blockName+' role '+block?.attrs?.role+' blocktime'+date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true}));
+                    console.log('blocktime add '+block.attrs.time_allowed+' minutes');
+                    date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
+                    datestring = datestring+' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 }
                 if(!block.blockName)
                     return;
@@ -290,19 +293,19 @@ function ModeControl() {
                     </div>)
                 }
                 //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}
-                if('wp4toastmasters/agendanoterich2' == block.blockName && ('reorganize' == mode)) {
-                    return (
-                    <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                    <div><strong>{datestring}</strong></div>
-                    <SanitizedHTML innerHTML={block.innerHTML} />
-                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
-                    </div>)
-                }
                 if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('edit_structure')) ) {
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
+                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
+                    </div>)
+                }
+                else if('wp4toastmasters/agendanoterich2' == block.blockName) {
+                    return (
+                    <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
+                    <SanitizedHTML innerHTML={block.innerHTML} />
                     {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
                     </div>)
                 }
@@ -331,7 +334,7 @@ function ModeControl() {
                     else {
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} />
+                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} post_id={post_id} />
                             </div>
                         );
                     }

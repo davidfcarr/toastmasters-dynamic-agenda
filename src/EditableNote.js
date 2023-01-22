@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
@@ -10,6 +10,11 @@ export function EditableNote(props) {
     console.log(props);
     const {post_id, block, mode, makeNotification} = props;
     const {editable, uid, time_allowed} = block.attrs;
+    const [querykey,setQuerykey] = useState('editable'+uid+post_id);
+
+    useEffect( () => {
+      setQuerykey('editable'+uid+post_id);
+    },[post_id]);
 
   function save() {
       const submitnote = {'note':editorRef.current.getContent(),'uid':props.uid,'post_id':props.post_id};
@@ -17,8 +22,8 @@ export function EditableNote(props) {
   }
 
   const { isLoading, isSuccess, isError, data, error, refetch } =
-  useQuery('editable', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError });
-  function fetchBlockData() {
+  useQuery(querykey, fetchEditableData, { enabled: true, retry: 2, onSuccess, onError });
+  function fetchEditableData() {
       return apiClient.get('editable_note_json?post_id='+post_id+'&uid='+uid);
   }
   
@@ -44,6 +49,8 @@ function onError(e) {
         }
       }
   );
+
+
 
   if(isLoading)
       return <p>Loading ...</p>
