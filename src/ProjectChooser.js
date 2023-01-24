@@ -19,7 +19,7 @@ export default function ProjectChooser(props) {
             if(data.paths) {
                 setChoices(data);
             } 
-        });
+        },[]);
 
         if(props.project)
         {
@@ -44,8 +44,9 @@ export default function ProjectChooser(props) {
 
     function updateSpeech() {
         console.log(props);
-        console.log('update speech for '+props.assignment.ID);
-        props.updateAssignment({'role': 'Speaker', 'ID': props.assignment.ID,'roleindex':props.roleindex,'blockindex':props.blockindex,'manual':manual,'project':project,'title':title,'intro':editorRef.current.getContent(),'start':props.attrs.start});
+        let newrole = {'role': 'Speaker', 'ID': props.assignment.ID,'roleindex':props.roleindex,'blockindex':props.blockindex,'manual':manual,'project':project,'title':title,'intro':editorRef.current.getContent(),'start':props.attrs.start,'maxtime':maxtime,'display_time':display_time};
+        console.log('update speech for '+props.assignment.ID,newrole);
+        props.updateAssignment(newrole);
     }
     
     if(!choices || typeof choices.manuals == 'undefined')
@@ -54,8 +55,7 @@ export default function ProjectChooser(props) {
         <>
         <div><SelectControl options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
         <div><SelectControl options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
-        <div>Project select goes here <SelectControl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); projectTime(value); } } /></div>
-        <p>project {typeof project}</p>
+        <div><SelectControl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); projectTime(value); } } /></div>
         <div className="tmflexrow">
         <div className="tmflex50">
         <TextControl label="Display Time" onChange={(value) => { setDisplayTime(value) } } value={display_time} />

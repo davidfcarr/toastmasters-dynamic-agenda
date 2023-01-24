@@ -143,4 +143,33 @@ button.blockmove:hover {
   margin-right: auto;
 }
 
+.speakertime-warning {
+  color: red;
+}
+
+.agendawrapper {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 14px;
+}
+
+.agendawrapper h1 {
+  font-size: 26px;
+  font-weight: bold;
+}
+
+.agendawrapper h2 {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.agendawrapper h3 {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.agendawrapper h4 {
+  font-size: 16px;
+  font-weight: bold;
+}
+
 /*# sourceMappingURL=style-index.css.map*/

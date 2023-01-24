@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from "react"
+import React from "react"
 import DOMPurify from 'dompurify';
 
 export function SanitizedHTML(props) {

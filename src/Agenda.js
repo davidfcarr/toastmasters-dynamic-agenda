@@ -3,6 +3,7 @@ import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
 import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
+import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
 import {Inserter} from "./Inserter.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
@@ -26,10 +27,27 @@ export default function Agenda() {
     
     const queryClient = useQueryClient();
     const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
-    useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 10000 });
+    useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 30000 });
     function fetchBlockData() {
         return apiClient.get('blocks_data/'+post_id);
     }
+    
+    function scrolltoId(id){
+        if(!id)
+            return;
+        var access = document.getElementById(id);
+        if(!access)
+            {
+                console.log('scroll to id could not find element '+id);
+                return;
+            }
+        access.scrollIntoView({behavior: 'smooth'}, true);
+    }
+
+    useEffect( () => {
+        scrolltoId('agendawrapper'+post_id);
+    },
+    []);
     
     const assignmentMutation = useMutation(
             async (assignment) => { return await apiClient.post("json_assignment_post", assignment)},
@@ -206,7 +224,7 @@ function NextMeetingPrompt() {
         //(notification.findIndex(() => 'Assignment updated') > -1)
 
 function ModeControl() {
-    const modeoptions = (user_can('edit_post') || user_can('edit_structure')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Insert/Delete/Reorder Blocks', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
+    const modeoptions = (user_can('edit_post') || user_can('edit_structure')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
     if(user_can('edit_post'))
         modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
 
@@ -267,8 +285,8 @@ function ModeControl() {
     }
 
     return (
-        <div className="agendawrapper">
-            {('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries('blocks-data'); refetch();}} />}
+        <div className="agendawrapper" id={"agendawrapper"+post_id}>
+            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries('blocks-data'); refetch();}} />}</>
             <h4>{date.toLocaleDateString('en-US',dateoptions)}</h4>
             <ModeControl />
             {data.blocksdata.map((block, blockindex) => {
@@ -280,17 +298,19 @@ function ModeControl() {
                     datestring = datestring+' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 }
                 if(!block.blockName)
-                    return;
+                    return null;
                 if('wp4toastmasters/role' == block.blockName) {
                     block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
-                    {('reorganize' == mode) && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}
-                    {('reorganize' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}
-                    </div>)
+                    <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
+                    <>{('reorganize' == mode) && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
+                    <>{('reorganize' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}</>
+                    <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                    </div>
+                    )
                 }
                 //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}
                 if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('edit_structure')) ) {
@@ -298,7 +318,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
-                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
+                    <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
                     </div>)
                 }
                 else if('wp4toastmasters/agendanoterich2' == block.blockName) {
@@ -306,7 +326,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <SanitizedHTML innerHTML={block.innerHTML} />
-                    {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
+                    <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
                     </div>)
                 }
                 //wp:wp4toastmasters/agendaedit {"editable":"Welcome and Introductions","uid":"editable16181528933590.29714489144034184","time_allowed":"5","inline":true}
@@ -317,7 +337,7 @@ function ModeControl() {
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
                             <EditableNote mode={mode} block={block} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
-                            {('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}
+                            <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
                             </div>
                         );
                         else
@@ -326,6 +346,7 @@ function ModeControl() {
                     else if('reorganize' == mode) {
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
                             <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} />
                             <p>{('reorganize' == mode) && (blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>
                             </div>
@@ -334,6 +355,7 @@ function ModeControl() {
                     else {
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
                             <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} post_id={post_id} />
                             </div>
                         );

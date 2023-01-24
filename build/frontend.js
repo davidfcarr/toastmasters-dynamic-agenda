@@ -756,10 +756,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
 /* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__);
 /* harmony import */ var _RoleBlock_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./RoleBlock.js */ "./src/RoleBlock.js");
-/* harmony import */ var _Inserter_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./Inserter.js */ "./src/Inserter.js");
-/* harmony import */ var _SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./SanitizedHTML.js */ "./src/SanitizedHTML.js");
-/* harmony import */ var _EditorAgendaNote_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./EditorAgendaNote.js */ "./src/EditorAgendaNote.js");
-/* harmony import */ var _EditableNote_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./EditableNote.js */ "./src/EditableNote.js");
+/* harmony import */ var _SpeakerTimeCount_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./SpeakerTimeCount.js */ "./src/SpeakerTimeCount.js");
+/* harmony import */ var _Inserter_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./Inserter.js */ "./src/Inserter.js");
+/* harmony import */ var _SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! ./SanitizedHTML.js */ "./src/SanitizedHTML.js");
+/* harmony import */ var _EditorAgendaNote_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./EditorAgendaNote.js */ "./src/EditorAgendaNote.js");
+/* harmony import */ var _EditableNote_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./EditableNote.js */ "./src/EditableNote.js");
+
 
 
 
@@ -798,11 +800,25 @@ function Agenda() {
     retry: 2,
     onSuccess,
     onError,
-    refetchInterval: 10000
+    refetchInterval: 30000
   });
   function fetchBlockData() {
     return _http_common_js__WEBPACK_IMPORTED_MODULE_2__["default"].get('blocks_data/' + post_id);
   }
+  function scrolltoId(id) {
+    if (!id) return;
+    var access = document.getElementById(id);
+    if (!access) {
+      console.log('scroll to id could not find element ' + id);
+      return;
+    }
+    access.scrollIntoView({
+      behavior: 'smooth'
+    }, true);
+  }
+  (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
+    scrolltoId('agendawrapper' + post_id);
+  }, []);
   const assignmentMutation = (0,react_query__WEBPACK_IMPORTED_MODULE_3__.useMutation)(async assignment => {
     return await _http_common_js__WEBPACK_IMPORTED_MODULE_2__["default"].post("json_assignment_post", assignment);
   }, {
@@ -842,7 +858,7 @@ function Agenda() {
       queryClient.invalidateQueries('blocks-data');
       //queryClient.setQueryData("blocks-data", data);
       makeNotification('Updated agenda blocks');
-      if (_Inserter_js__WEBPACK_IMPORTED_MODULE_6__.Inserter.setInsert) _Inserter_js__WEBPACK_IMPORTED_MODULE_6__.Inserter.setInsert('');
+      if (_Inserter_js__WEBPACK_IMPORTED_MODULE_7__.Inserter.setInsert) _Inserter_js__WEBPACK_IMPORTED_MODULE_7__.Inserter.setInsert('');
     }
   });
   function onSuccess(e) {
@@ -986,7 +1002,7 @@ function Agenda() {
       'label': 'Suggest',
       'value': 'suggest'
     }, {
-      'label': 'Insert/Delete/Reorder Blocks',
+      'label': 'Organize',
       'value': 'reorganize'
     }] : [{
       'label': 'Sign Up',
@@ -1006,7 +1022,7 @@ function Agenda() {
       id: "fixed-mode-control"
     }, notification && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
       className: "tm-notification tm-notification-success suggestion-notification"
-    }, updating, " ", (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_7__.SanitizedHTML, {
+    }, updating, " ", (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_8__.SanitizedHTML, {
       innerHTML: notification.message
     }), " ", notification.prompt && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(NextMeetingPrompt, null), " ", notification.otherproperties && notification.otherproperties.map(property => {
       if (property.template_prompt) return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
@@ -1087,8 +1103,9 @@ function Agenda() {
     })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("em", null, "If this is not set, only editors will be able to add, delete, or rearrange role and note blocks on a meeting agenda. Even with this turned on, only editors and administrators will have access to this Template Options and Settings screen.")))));
   }
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
-    className: "agendawrapper"
-  }, 'rsvpmaker' != wpt_rest.post_type && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.SelectControl, {
+    className: "agendawrapper",
+    id: "agendawrapper" + post_id
+  }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'rsvpmaker' != wpt_rest.post_type && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_4__.SelectControl, {
     label: "Choose Event",
     value: post_id,
     options: data.upcoming,
@@ -1098,7 +1115,7 @@ function Agenda() {
       queryClient.invalidateQueries('blocks-data');
       refetch();
     }
-  }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h4", null, date.toLocaleDateString('en-US', dateoptions)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(ModeControl, null), data.blocksdata.map((block, blockindex) => {
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h4", null, date.toLocaleDateString('en-US', dateoptions)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(ModeControl, null), data.blocksdata.map((block, blockindex) => {
     datestring = date.toLocaleTimeString('en-US', {
       hour: "2-digit",
       minute: "2-digit",
@@ -1118,7 +1135,7 @@ function Agenda() {
         hour12: true
       });
     }
-    if (!block.blockName) return;
+    if (!block.blockName) return null;
     if ('wp4toastmasters/role' == block.blockName) {
       block.assignments.forEach((assignment, roleindex) => {
         console.log(block.attrs.role + ': ' + roleindex + ' name:' + assignment.name);
@@ -1136,7 +1153,7 @@ function Agenda() {
         attrs: block.attrs,
         assignments: block.assignments,
         updateAssignment: updateAssignment
-      }), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+      }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
         className: "blockmove",
         onClick: () => {
           moveBlock(blockindex, 'up');
@@ -1146,7 +1163,7 @@ function Agenda() {
         onClick: () => {
           moveBlock(blockindex, 'down');
         }
-      }, "Move ", block.attrs.role, " Role Down")), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+      }, "Move ", block.attrs.role, " Role Down"))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         className: "tmflexrow"
       }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         className: "tmflex30"
@@ -1167,15 +1184,18 @@ function Agenda() {
           data.blocksdata[blockindex].attrs.time_allowed = value;
           updateAgenda.mutate(data);
         }
-      }))), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+      })))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
         className: "blockmove",
         onClick: () => {
           moveBlock(blockindex, 'delete');
         }
-      }, "Delete")), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_Inserter_js__WEBPACK_IMPORTED_MODULE_6__.Inserter, {
+      }, "Delete")), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_Inserter_js__WEBPACK_IMPORTED_MODULE_7__.Inserter, {
         blockindex: blockindex,
         insertBlock: insertBlock
-      })));
+      }))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SpeakerTimeCount_js__WEBPACK_IMPORTED_MODULE_6__.SpeakerTimeCount, {
+        block: block,
+        makeNotification: makeNotification
+      }));
     }
     //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}
     if ('wp4toastmasters/agendanoterich2' == block.blockName && 'edit' == mode && (user_can('edit_post') || user_can('edit_structure'))) {
@@ -1183,11 +1203,11 @@ function Agenda() {
         key: 'block' + blockindex,
         id: 'block' + blockindex,
         className: "block"
-      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditorAgendaNote_js__WEBPACK_IMPORTED_MODULE_8__.EditorAgendaNote, {
+      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditorAgendaNote_js__WEBPACK_IMPORTED_MODULE_9__.EditorAgendaNote, {
         blockindex: blockindex,
         block: block,
         replaceBlock: replaceBlock
-      }), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+      }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
         className: "blockmove",
         onClick: () => {
           moveBlock(blockindex, 'up');
@@ -1197,15 +1217,15 @@ function Agenda() {
         onClick: () => {
           moveBlock(blockindex, 'down');
         }
-      }, "Move ", block.attrs.role, " Role Down")));
+      }, "Move ", block.attrs.role, " Role Down"))));
     } else if ('wp4toastmasters/agendanoterich2' == block.blockName) {
       return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
         key: 'block' + blockindex,
         id: 'block' + blockindex,
         className: "block"
-      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_7__.SanitizedHTML, {
+      }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_8__.SanitizedHTML, {
         innerHTML: block.innerHTML
-      }), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+      }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
         className: "blockmove",
         onClick: () => {
           moveBlock(blockindex, 'up');
@@ -1215,7 +1235,7 @@ function Agenda() {
         onClick: () => {
           moveBlock(blockindex, 'down');
         }
-      }, "Move ", block.attrs.role, " Role Down")));
+      }, "Move ", block.attrs.role, " Role Down"))));
     }
     //wp:wp4toastmasters/agendaedit {"editable":"Welcome and Introductions","uid":"editable16181528933590.29714489144034184","time_allowed":"5","inline":true}
     if ('wp4toastmasters/agendaedit' == block.blockName) {
@@ -1224,13 +1244,13 @@ function Agenda() {
           key: 'block' + blockindex,
           id: 'block' + blockindex,
           className: "block"
-        }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditableNote_js__WEBPACK_IMPORTED_MODULE_9__.EditableNote, {
+        }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditableNote_js__WEBPACK_IMPORTED_MODULE_10__.EditableNote, {
           mode: mode,
           block: block,
           uid: block.attrs.uid,
           post_id: post_id,
           makeNotification: makeNotification
-        }), 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+        }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'reorganize' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, blockindex > moveableBlocks[0] && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
           className: "blockmove",
           onClick: () => {
             moveBlock(blockindex, 'up');
@@ -1240,13 +1260,13 @@ function Agenda() {
           onClick: () => {
             moveBlock(blockindex, 'down');
           }
-        }, "Move ", block.attrs.role, " Role Down")));else return null;
+        }, "Move ", block.attrs.role, " Role Down"))));else return null;
       } else if ('reorganize' == mode) {
         return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
           key: 'block' + blockindex,
           id: 'block' + blockindex,
           className: "block"
-        }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditableNote_js__WEBPACK_IMPORTED_MODULE_9__.EditableNote, {
+        }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditableNote_js__WEBPACK_IMPORTED_MODULE_10__.EditableNote, {
           mode: mode,
           block: block,
           uid: block.attrs.uid,
@@ -1267,7 +1287,7 @@ function Agenda() {
           key: 'block' + blockindex,
           id: 'block' + blockindex,
           className: "block"
-        }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditableNote_js__WEBPACK_IMPORTED_MODULE_9__.EditableNote, {
+        }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("strong", null, datestring)), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_EditableNote_js__WEBPACK_IMPORTED_MODULE_10__.EditableNote, {
           mode: mode,
           block: block,
           uid: block.attrs.uid,
@@ -1280,7 +1300,7 @@ function Agenda() {
       key: 'block' + blockindex,
       id: 'block' + blockindex,
       className: "block"
-    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_7__.SanitizedHTML, {
+    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_SanitizedHTML_js__WEBPACK_IMPORTED_MODULE_8__.SanitizedHTML, {
       innerHTML: block.innerHTML
     }));else return null; //<p key={'block'+blockindex} id={'block'+blockindex} className="block">{blockindex}: {block.blockName} <button onClick={() => { moveBlock(blockindex, 'down') } }>Move Down</button> <button onClick={() => { moveBlock(blockindex, 'up') } }>Move Up</button></p>
   }));
@@ -1956,7 +1976,7 @@ function ProjectChooser(props) {
       if (data.paths) {
         setChoices(data);
       }
-    });
+    }, []);
     if (props.project) {
       startFromProject(props.project);
     }
@@ -1975,8 +1995,7 @@ function ProjectChooser(props) {
   }
   function updateSpeech() {
     console.log(props);
-    console.log('update speech for ' + props.assignment.ID);
-    props.updateAssignment({
+    let newrole = {
       'role': 'Speaker',
       'ID': props.assignment.ID,
       'roleindex': props.roleindex,
@@ -1985,8 +2004,12 @@ function ProjectChooser(props) {
       'project': project,
       'title': title,
       'intro': editorRef.current.getContent(),
-      'start': props.attrs.start
-    });
+      'start': props.attrs.start,
+      'maxtime': maxtime,
+      'display_time': display_time
+    };
+    console.log('update speech for ' + props.assignment.ID, newrole);
+    props.updateAssignment(newrole);
   }
   if (!choices || typeof choices.manuals == 'undefined') return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, "Loading project choices");
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
@@ -2001,7 +2024,7 @@ function ProjectChooser(props) {
     onChange: value => {
       setManual(value);
     }
-  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, "Project select goes here ", (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
     options: choices['projects'][manual] ? choices['projects'][manual] : [{
       'value': '',
       label: 'Set Path and Level to See Projects'
@@ -2012,7 +2035,7 @@ function ProjectChooser(props) {
       setProject(value);
       projectTime(value);
     }
-  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, "project ", typeof project), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
+  })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     className: "tmflexrow"
   }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", {
     className: "tmflex50"
@@ -2101,6 +2124,8 @@ function RoleBlock(props) {
   let roletagbase = '_' + attrs.role.replaceAll(' ', '_') + '_';
   const [viewTop, setViewTop] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)('');
   let roles = [];
+  var start = attrs.start ? parseInt(attrs.start) : 1;
+  if (!start) start = 1;
   (0,react__WEBPACK_IMPORTED_MODULE_1__.useEffect)(() => {
     getMemberList();
   }, [post_id]);
@@ -2142,7 +2167,7 @@ function RoleBlock(props) {
         // skip spot my assignment previously occupied
         newassignments.push(prevassignment);
     });
-    updateAssignment(newassignments, blockindex, attrs.start);
+    updateAssignment(newassignments, blockindex, start);
     scrolltoId(roletagbase + newindex);
   }
   function removeBlanks() {
@@ -2163,7 +2188,7 @@ function RoleBlock(props) {
       console.log('addinng to bottom', r);
     });
     console.log('remove blanks new assignments', newassignments);
-    updateAssignment(newassignments, blockindex, attrs.start);
+    updateAssignment(newassignments, blockindex, start);
   }
   function getMemberName(id) {
     console.log('get member name, memberlist', memberlist);
@@ -2174,7 +2199,7 @@ function RoleBlock(props) {
     console.log('member return ', m);
     return m?.value;
   }
-  if (['reorganize', 'reorganize'].includes(mode)) return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, attrs.role, " (", attrs.count, ")");
+  if (['reorganize'].includes(mode)) return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, attrs.role, " (", attrs.count, ")");
   let count = attrs.count ? attrs.count : 1;
   let openslots = [];
   let filledslots = [];
@@ -2182,7 +2207,7 @@ function RoleBlock(props) {
   let role_label = attrs.role;
   return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, assignments.map((assignment, roleindex) => {
     if (assignment.ID) filledslots.push(roleindex);else openslots.push(roleindex);
-    let shownumber = attrs.count && attrs.count > 1 || attrs.start > 1 ? '#' + (roleindex + attrs.start) : '';
+    let shownumber = attrs.count && attrs.count > 1 || start > 1 ? '#' + (roleindex + start) : '';
     if (roleindex == count) {
       role_label = 'Backup ' + role;
       shownumber = '';
@@ -2204,10 +2229,10 @@ function RoleBlock(props) {
           'role': role,
           'blockindex': blockindex,
           'roleindex': roleindex,
-          'start': attrs.start
+          'start': start
         });
       }
-    }, "Reset")), assignment.ID < 1 && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+    }, "Reset")), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, assignment.ID < 1 && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
       className: "tmform",
       onClick: function (event) {
         /*event.target.disabled = true;*/updateAssignment({
@@ -2216,15 +2241,15 @@ function RoleBlock(props) {
           'role': role,
           'roleindex': roleindex,
           'blockindex': blockindex,
-          'start': attrs.start
+          'start': start
         });
       }
-    }, "Take Role")), 'suggest' == mode && !assignment.ID && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_Suggest_js__WEBPACK_IMPORTED_MODULE_5__["default"], {
+    }, "Take Role"))), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'suggest' == mode && !assignment.ID && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_Suggest_js__WEBPACK_IMPORTED_MODULE_5__["default"], {
       memberlist: memberlist,
       roletag: roletagbase + (roleindex + 1),
       post_id: props.post_id,
       current_user_id: current_user_id
-    }), 'edit' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
+    })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, 'edit' == mode && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_2__.SelectControl, {
       label: "Select Member",
       value: assignment.ID,
       options: memberlist,
@@ -2235,10 +2260,10 @@ function RoleBlock(props) {
           'role': role,
           'roleindex': roleindex,
           'blockindex': blockindex,
-          'start': attrs.start
+          'start': start
         });
       }
-    }), ('edit' == mode || current_user_id == assignment.ID) && assignment.ID > 0 && !['reorganize', 'reorganize'].includes(mode) && role.search('Speaker') > -1 && role.search('Backup') == -1 && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_ProjectChooser_js__WEBPACK_IMPORTED_MODULE_4__["default"], {
+    })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, ('edit' == mode || current_user_id == assignment.ID) && assignment.ID > 0 && !['reorganize', 'reorganize'].includes(mode) && role.search('Speaker') > -1 && role.search('Backup') == -1 && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_ProjectChooser_js__WEBPACK_IMPORTED_MODULE_4__["default"], {
       attrs: attrs,
       assignment: assignment,
       project: assignment.project,
@@ -2248,7 +2273,7 @@ function RoleBlock(props) {
       updateAssignment: updateAssignment,
       roleindex: roleindex,
       blockindex: blockindex
-    }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, 'edit' == mode && assignments.length > 1 && roleindex > 0 && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
+    })), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", null, 'edit' == mode && assignments.length > 1 && roleindex > 0 && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("button", {
       className: "tmform",
       onClick: () => {
         moveItem(roleindex, 0);
@@ -2332,6 +2357,57 @@ function SanitizedHTML(props) {
       __html: cleanHTML
     }
   });
+}
+
+/***/ }),
+
+/***/ "./src/SpeakerTimeCount.js":
+/*!*********************************!*\
+  !*** ./src/SpeakerTimeCount.js ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "SpeakerTimeCount": () => (/* binding */ SpeakerTimeCount)
+/* harmony export */ });
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
+/* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react */ "react");
+/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_1__);
+
+
+function SpeakerTimeCount(props) {
+  const {
+    attrs,
+    assignments
+  } = props.block;
+  const [warningGiven, setWarningGiven] = (0,react__WEBPACK_IMPORTED_MODULE_1__.useState)(false);
+  if (attrs.role != 'Speaker') return null;
+  const {
+    time_allowed,
+    count
+  } = attrs;
+  let totaltime = 0;
+  assignments.forEach((assignment, aindex) => {
+    if (assignment.ID && aindex < count) totaltime += parseInt(assignment.maxtime);
+  });
+  if (!totaltime) return null;
+  function delayedNotification(message) {
+    setTimeout(() => {
+      props.makeNotification(message);
+    }, 1000);
+    setWarningGiven(true);
+  }
+  if (totaltime > time_allowed) {
+    if (!warningGiven) delayedNotification('Speakers have reserved ' + totaltime + ' minutes out of ' + time_allowed + ' allowed. Meeting organizers may change the time allowed for different parts of the meeting on the Organize tab.');
+    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
+      className: "speakertime speakertime-warning"
+    }, "Speakers have reserved ", totaltime, " minutes out of ", time_allowed, " allowed"));
+  } else return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("div", null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
+    className: "speakertime"
+  }, "Speakers have reserved ", totaltime, " minutes out of ", time_allowed, " allowed"));
 }
 
 /***/ }),
