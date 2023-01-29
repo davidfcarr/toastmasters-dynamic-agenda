@@ -53,7 +53,7 @@ export function TemplateAndSettings (props) {
                     return newdata;
                 }) 
                 queryClient.invalidateQueries(['blocks-data',data.data.post_id]);
-                makeNotification('Template update :'+data.data.status);
+                //makeNotification('Template updated.',false,[{'template_prompt':data.data.has_template}]);
                 //queryClient.setQueryData("blocks-data", data);
                 //queryClient.invalidateQueries(['blocks-data',post_id]);
                 //makeNotification('Updated assignment',data.data.prompt);
@@ -82,8 +82,8 @@ const permissionsMutation = useMutation(
     return (
         <div>
         <h2>Template Options and Settings</h2>
-        <>{data.has_template && <div><p><button className="tmform" onClick={() => { let mymutation = {'copyfrom':data.post_id,'copyto':data.has_template,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); makeNotification('Template '+data.has_template+' updated (not really, still a demo).',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
-        <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+post_id}>Create/Update</a></p>}</>
+        <>{data.has_template && <div><p><button className="tmform" onClick={() => { let mymutation = {'copyfrom':data.post_id,'copyto':data.has_template,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); makeNotification('Template '+data.has_template+' updated.',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
+        <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+data.post_id}>Create/Update</a> - copy content to new and existing events</p>}</>
         <SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
         <p><button className="tmform" onClick={() => {  makeNotification('Updating ...'); let mymutation = {'copyfrom':newtemplate,'copyto':data.post_id,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
         <>{user_can('manage_options') && (

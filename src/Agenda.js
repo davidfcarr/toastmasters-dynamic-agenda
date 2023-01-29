@@ -39,6 +39,16 @@ export default function Agenda() {
         console.log('permissions',permissions);
     }
 
+    function calcTimeAllowed(attrs) {
+        let time_allowed = 0;
+        let count = (attrs.count) ? attrs.count : 1;
+        if('Speaker' == attrs.role)
+            time_allowed = count * 7;
+        if('Evaluator' == attrs.role)
+            time_allowed = count * 3;
+        return time_allowed;
+    }
+
     function scrolltoId(id){
         if(!id)
             return;
@@ -379,7 +389,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
+                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
                     <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                     <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} role={block.attrs.role} />}</>
                     </div>
@@ -391,6 +401,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
+                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
                     <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                     </div>)
                 }
@@ -399,6 +410,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <SanitizedHTML innerHTML={block.innerHTML} />
+                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
                     <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                     </div>)
                 }
@@ -410,6 +422,7 @@ function ModeControl() {
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
                             <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                            <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
                             <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                             </div>
                         );
@@ -421,6 +434,7 @@ function ModeControl() {
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                             <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} post_id={post_id} />
+                            <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
                             <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                             </div>
                         );
