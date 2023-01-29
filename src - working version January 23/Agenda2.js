@@ -290,7 +290,7 @@ function makeNotification(message, rawhtml = false) {
 function NextMeetingPrompt() {
     let pid = data.upcoming.findIndex((item) => item.value == post_id);
     if(data.upcoming[pid +1])
-        return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink}>Next meeting?</a></div>
+        return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink+'?newsignup'}>Next meeting?</a></div>
     else
         return null;
 }

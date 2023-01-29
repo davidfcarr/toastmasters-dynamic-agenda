@@ -44,7 +44,7 @@ export default function ProjectChooser(props) {
 
     function updateSpeech() {
         console.log(props);
-        let newrole = {'role': 'Speaker', 'ID': props.assignment.ID,'roleindex':props.roleindex,'blockindex':props.blockindex,'manual':manual,'project':project,'title':title,'intro':editorRef.current.getContent(),'start':props.attrs.start,'maxtime':maxtime,'display_time':display_time,'count':props.attrs.count};
+        let newrole = {'role': 'Speaker', 'ID': props.assignment.ID,'roleindex':props.roleindex,'blockindex':props.blockindex,'manual':manual,'project':project,'title':title,'intro':editorRef.current.getContent(),'start':props.attrs.start,'maxtime':maxtime,'display_time':display_time};
         console.log('update speech for '+props.assignment.ID,newrole);
         props.updateAssignment(newrole);
     }

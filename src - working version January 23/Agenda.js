@@ -5,11 +5,9 @@ import { __experimentalNumberControl as NumberControl, TextareaControl, SelectCo
 import RoleBlock from "./RoleBlock.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
 import {Inserter} from "./Inserter.js";
-import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
-import {Up, Down, Delete} from './icons.js';
 
 export default function Agenda() {
     let initialPost = 0;
@@ -25,20 +23,15 @@ export default function Agenda() {
     const [mode, setMode] = useState('signup');
     const [updating, setUpdating] = useState('');
     const [newtemplate, setNewTemplate] = useState(0);
-    const [updated,setUpdated] = useState(new Date());
+    const [allowEditStructure, setAllowEditStructure] = useState(false);
     
     const queryClient = useQueryClient();
     const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
-    useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 30000 });
+    useQuery('blocks-data', fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 30000 });
     function fetchBlockData() {
         return apiClient.get('blocks_data/'+post_id);
     }
     
-    if(axiosdata) {
-        const {permissions} = axiosdata?.data;
-        console.log('permissions',permissions);
-    }
-
     function scrolltoId(id){
         if(!id)
             return;
@@ -51,85 +44,41 @@ export default function Agenda() {
         access.scrollIntoView({behavior: 'smooth'}, true);
     }
 
-    //start from the top
     useEffect( () => {
-        scrolltoId('react-agenda');
+        scrolltoId('agendawrapper'+post_id);
     },
     []);
     
     const assignmentMutation = useMutation(
             async (assignment) => { return await apiClient.post("json_assignment_post", assignment)},
             {
-                onMutate: async (assignment) => {
-                    await queryClient.cancelQueries(['blocks-data',post_id]);
-                    const previousData = queryClient.getQueryData(['blocks-data',post_id]);
-                    queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                        //function passed to setQueryData
-                        const {blockindex,roleindex} = assignment;
-                        const {data} = oldQueryData;
-                        const {blocksdata} = data;
-                        blocksdata[blockindex].assignments[roleindex] = assignment;
-                        console.log('new assignments for block',blocksdata[blockindex].assignments);
-                        const newdata = {
-                            ...oldQueryData, data: {...data,blocksdata: blocksdata}
-                        };
-                        //console.log('modified query to return',newdata);
-                        return newdata;
-                    }) 
-                    makeNotification('Updating ...');
-                    return {previousData}
-                },
-                onSettled: (data, error, variables, context) => {
-                    console.log('onsettled variables', variables);
-                    queryClient.invalidateQueries(['blocks-data',post_id]);
-                    makeNotification('Updated assignment: '+variables.role,true);
-                },
-                /*
                 onSuccess: (data, error, variables, context) => {
                     console.log('assignment update success',data);
                     queryClient.setQueryData("blocks-data", data);
-                    queryClient.invalidateQueries(['blocks-data',post_id]);
+                    queryClient.invalidateQueries('blocks-data');
                     makeNotification('Updated assignment',data.data.prompt);
                 },
-                */
                 onError: (err, variables, context) => {
                     console.log('mutate assignment error',err);
-                    queryClient.setQueryData("blocks-data", context.previousData);
+                    //queryClient.setQueryData("blocks-data", context.previousValue);
                 },
             }
-    );
+        );
 
     const multiAssignmentMutation = useMutation(
         async (multi) => { return await apiClient.post("json_multi_assignment_post", multi)},
         {
-            onMutate: async (multi) => {
-                await queryClient.cancelQueries(['blocks-data',post_id]);
-                const previousValue = queryClient.getQueryData(['blocks-data',post_id]);
-                queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                    //function passed to setQueryData
-                    const {blockindex} = multi;
-                    const {data} = oldQueryData;
-                    const {blocksdata} = data;
-                    blocksdata[blockindex].assignments = multi.assignments;
-                    console.log('new block',blocksdata[blockindex]);
-                    const newdata = {
-                        ...oldQueryData, data: {...data,blocksdata: blocksdata}
-                    };
-                    console.log('modified query to return',newdata);
-                    return newdata;
-                }) 
-                makeNotification('Updating ...');
-                return {previousValue}
-            },
-            onSettled: (data, error, variables, context) => {
-                console.log('onsettled variables', variables);
-                queryClient.invalidateQueries(['blocks-data',post_id]);
-                makeNotification('Updated');
+
+            onSuccess: (data, error, variables, context) => {
+                queryClient.invalidateQueries('blocks-data');
+                queryClient.setQueryData("blocks-data", data);
+                makeNotification('Updated assignments list');
+                console.log('Updated assignments list',data);
             },
             onError: (err, variables, context) => {
                 console.log('mutate assignment error');
                 console.log(err);
-                queryClient.setQueryData("blocks-data", context.previousValue);
+                //queryClient.setQueryData("blocks-data", context.previousValue);
               },
             } );
     
@@ -138,34 +87,13 @@ export default function Agenda() {
     }
 
     const updateAgenda = useMutation(updateAgendaPost, {
-        onMutate: async (agenda) => {
-            await queryClient.cancelQueries(['blocks-data',post_id]);
-            const previousValue = queryClient.getQueryData(['blocks-data',post_id]);
-            queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                //function passed to setQueryData
-                const {data} = oldQueryData;
-                const newdata = {
-                    ...oldQueryData, data: {...data,blocksdata: agenda.blocksdata}
-                };
-                console.log('modified query to return',newdata);
-                return newdata;
-            }) 
-            makeNotification('Updating ...');
-            if(Inserter.setInsert)
-                Inserter.setInsert('');
-            return {previousValue}
-        },
-        onSettled: (data, error, variables, context) => {
-            console.log('onsettled variables', variables);
-            queryClient.invalidateQueries(['blocks-data',post_id]);
-            makeNotification('Updated');
-        },
-        onError: (err, variables, context) => {
-            console.log('mutate assignment error');
-            console.log(err);
-            queryClient.setQueryData("blocks-data", context.previousValue);
-          },
-    
+            onSuccess: (data, error, variables, context) => {
+                queryClient.invalidateQueries('blocks-data');
+                //queryClient.setQueryData("blocks-data", data);
+                makeNotification('Updated agenda blocks');
+                if(Inserter.setInsert)
+                    Inserter.setInsert('');
+            }    
           }
     )
 
@@ -219,24 +147,13 @@ export default function Agenda() {
         updateAgenda.mutate(data);
     }
 
-    function MoveButtons(props) {
-        const {blockindex, role} = props;
-        return (
-            <div className="movebuttons">
-            <p>{!!(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }><Up /> Move {role && role+' Role '}Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }><Down /> Move {role && role+' Role '}Down</button>}</p>
-            <div><Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} /> </div>
-            </div>
-        );
-    }
-
-    function insertBlock(blockindex, attributes={}, blockname = 'wp4toastmasters/role',innerHTML='', edithtml='') {
+    function insertBlock(blockindex, attributes={}, blockname = 'wp4toastmasters/role',innerHTML) {
         let newblocks = [];
         data.blocksdata.forEach(
             (block, index) => {
                 newblocks.push(block);
                 if(index == blockindex) {
-                    console.log('newblock',{'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
-                    newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
+                    newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML});
                 }
             }
         );
@@ -268,19 +185,18 @@ export default function Agenda() {
         updateAgenda.mutate(data);
     }
 
-    function updateAssignment (assignment, blockindex = null, start=1, count=1) {
+    function updateAssignment (assignment, blockindex = null, start=1) {
         setUpdating('Updating ...');
         //embed index properties if passed to the function separately
         console.log('assignment received by updateAssignment', assignment);
 
         if(Array.isArray(assignment))
             {
-            assignment = assignment.map((a) => { return {...a, post_id:post_id,count:count} });
-            return multiAssignmentMutation.mutate({'assignments':assignment,'blockindex':blockindex,'start':1});// todo start won't always be 1!
+            assignment = assignment.map((a) => { return {...a, post_id:post_id} });
+            return multiAssignmentMutation.mutate({'assignments':assignment,'blockindex':blockindex,'start':1});
             }
         else {
         assignment.post_id = post_id;
-        console.log('assignment for mutation',assignment);
         console.log('assign '+assignment.role+':'+assignment.roleindex+' to '+assignment.ID+' '+assignment.name);
         assignmentMutation.mutate(assignment);
         }
@@ -296,13 +212,12 @@ function makeNotification(message, prompt = false, otherproperties = null) {
         setNotification(null);
     },25000);
     setNotificationTimeout(nt);
-    setUpdated(new Date());
 }
 
 function NextMeetingPrompt() {
     let pid = data.upcoming.findIndex((item) => item.value == post_id);
     if(data.upcoming[pid +1])
-        return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink+'?newsignup'}>Next meeting?</a></div>
+        return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink+'?newsignup'}>Next meeting? </a></div>
     else
         return null;
 }
@@ -350,17 +265,28 @@ function ModeControl() {
 
     if('settings' == mode)
     {
+        let templates = data.upcoming.map((item) => {if(item.label.indexOf('emplate')) return item});
+        templates.push({'value':0,'label':'Choose Template'});
         return(
             <div className="agendawrapper">
             <ModeControl />
-            <TemplateAndSettings user_can={user_can} data={data} makeNotification={makeNotification} />
+            <h2>Template Options and Settings</h2>
+            <>{data.has_template && <div><p><button className="tmform" onClick={() => { makeNotification('Template updated (not really, still a demo).',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
+            <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+post_id}>Create/Update</a></p>}</>
+            <SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
+            <p><button className="tmform" onClick={() => { makeNotification('This does not work yet') }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
+            <>{user_can('manage_options') && (
+            <div className="adminonly"><h3>Admin Only Options Go Here</h3><p><ToggleControl label="Allow Regular Members to Edit Agenda Structure" checked={ allowEditStructure }
+            onChange={ () => {
+                setAllowEditStructure( ( state ) => ! state );
+            } } /></p><p><em>If this is not set, only editors will be able to add, delete, or rearrange role and note blocks on a meeting agenda. Even with this turned on, only editors and administrators will have access to this Template Options and Settings screen.</em></p></div>)}</>
             </div>
         );
     }
 
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
-            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
+            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries('blocks-data'); refetch();}} />}</>
             <h4>{date.toLocaleDateString('en-US',dateoptions)}</h4>
             <ModeControl />
             {data.blocksdata.map((block, blockindex) => {
@@ -379,9 +305,10 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
+                    <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
+                    <>{('reorganize' == mode) && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={block.attrs.count} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
+                    <>{('reorganize' == mode) && <div><p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}>Delete</button></p><Inserter blockindex={blockindex} insertBlock={insertBlock} /></div>}</>
                     <SpeakerTimeCount block={block} makeNotification={makeNotification} />
-                    <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} role={block.attrs.role} />}</>
                     </div>
                     )
                 }
@@ -391,7 +318,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
-                    <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
+                    <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
                     </div>)
                 }
                 else if('wp4toastmasters/agendanoterich2' == block.blockName) {
@@ -399,7 +326,7 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <SanitizedHTML innerHTML={block.innerHTML} />
-                    <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
+                    <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
                     </div>)
                 }
                 //wp:wp4toastmasters/agendaedit {"editable":"Welcome and Introductions","uid":"editable16181528933590.29714489144034184","time_allowed":"5","inline":true}
@@ -409,8 +336,8 @@ function ModeControl() {
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
-                            <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
+                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                            <>{('reorganize' == mode) && <p>{(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>}</>
                             </div>
                         );
                         else
@@ -420,8 +347,8 @@ function ModeControl() {
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
-                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} post_id={post_id} />
-                            <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
+                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} />
+                            <p>{('reorganize' == mode) && (blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }>Move {block.attrs.role} Role Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }>Move {block.attrs.role} Role Down</button>}</p>
                             </div>
                         );
                     }

@@ -10,7 +10,7 @@ const {time_allowed, count} = attrs;
 let totaltime = 0;
 
 assignments.forEach( (assignment, aindex) => {
-    if(assignment.ID && (aindex < count))//count time for speakers but not backup speaker
+    if(assignment.ID && (aindex < count))
         totaltime += parseInt(assignment.maxtime);
 } );
 

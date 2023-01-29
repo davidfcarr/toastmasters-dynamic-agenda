@@ -6,15 +6,12 @@ const queryClient = new QueryClient();
 
 import Agenda from "./Agenda";
 window.addEventListener('load', function(event) {
-    const currentdoc = document.getElementById('react-agenda');
-    let post_id = currentdoc.getAttribute('post_id');
-    console.log('init post_id',currentdoc.getAttribute('post_id'));
     //const agenda_root = document.getElementById('react-agenda');
     //if(agenda_root)
         ReactDOM.render(
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
-            <Agenda post_id={post_id} />
+            <Agenda />
             <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
         </QueryClientProvider>
   </React.StrictMode>,

@@ -50,3 +50,15 @@ function agenda_block_type_metadata($metadata) {
 	}
 	return $metadata;
 }
+
+function get_dynamic_agenda_script_handle ($type) {
+return generate_block_asset_handle( 'wp4toastmasters/toastmasters-dynamic-agenda', $type);
+}
+if(isset($_GET['newsignup'])) {
+	add_action('wp_enqueue_scripts', 'dynamic_agenda_script');
+}
+function dynamic_agenda_script() {
+	wp_enqueue_script(get_dynamic_agenda_script_handle('viewScript'));
+	wp_enqueue_style(get_dynamic_agenda_script_handle('style'));
+	wp_localize_script( 'wp4toastmasters-toastmasters-dynamic-agenda-view-script', 'wpt_rest',wpt_rest_array());
+}
