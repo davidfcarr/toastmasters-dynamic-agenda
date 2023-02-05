@@ -9,7 +9,9 @@ import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
+import {SignupNote} from './EditableNote.js';
 import {Up, Down, Delete} from './icons.js';
+import {Reorganize} from './Reorganize';
 
 export default function Agenda() {
     let initialPost = 0;
@@ -26,10 +28,11 @@ export default function Agenda() {
     const [updating, setUpdating] = useState('');
     const [newtemplate, setNewTemplate] = useState(0);
     const [updated,setUpdated] = useState(new Date());
+    const [refetchInterval, setRefetchInterval] = useState(30000);
     
     const queryClient = useQueryClient();
     const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
-    useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 30000 });
+    useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: refetchInterval });
     function fetchBlockData() {
         return apiClient.get('blocks_data/'+post_id);
     }
@@ -319,7 +322,7 @@ function NextMeetingPrompt() {
         //(notification.findIndex(() => 'Assignment updated') > -1)
 
 function ModeControl() {
-    const modeoptions = (user_can('edit_post') || user_can('edit_structure')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
+    const modeoptions = (user_can('edit_post') || user_can('organize_agenda')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
     if(user_can('edit_post'))
         modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
 
@@ -368,6 +371,9 @@ function ModeControl() {
         );
     }
 
+    if('reorganize' == mode)
+        return <Reorganize data={data} mode={mode} multiAssignmentMutation={multiAssignmentMutation} updateAgenda={updateAgenda} ModeControl={ModeControl} post_id={post_id} updateAssignment={updateAssignment} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />
+
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
@@ -389,20 +395,15 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
                     <SpeakerTimeCount block={block} makeNotification={makeNotification} />
-                    <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} role={block.attrs.role} />}</>
                     </div>
                     )
                 }
-                //                    {('wp4toastmasters/role' == insert) && <p><SelectControl value='' options={[{'label':'Choose Role','value':''},{'label':'Speaker','value':'Speaker'},{'label':'Topics Master','value':'Topics Master'},{'label':'Evaluator','value':'Evaluator'},{'label':'General Evaluator','value':'General Evaluator'},{'label':'Toastmaster of the Day','value':'Toastmaster of the Day'}]} onChange={(value) => {insertBlock(blockindex,{'role':value,'count':1});setInsert('')} } /></p>}
-                if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('edit_structure')) ) {
+                if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('organize_agenda')) ) {
                     return (
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
-                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
-                    <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                     </div>)
                 }
                 else if('wp4toastmasters/agendanoterich2' == block.blockName) {
@@ -410,34 +411,20 @@ function ModeControl() {
                     <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                     <div><strong>{datestring}</strong></div>
                     <SanitizedHTML innerHTML={block.innerHTML} />
-                    <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
-                    <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                     </div>)
                 }
                 //wp:wp4toastmasters/agendaedit {"editable":"Welcome and Introductions","uid":"editable16181528933590.29714489144034184","time_allowed":"5","inline":true}
                 if('wp4toastmasters/agendaedit' == block.blockName) {
                     if('edit' == mode) {
-                        if((user_can('edit_post') || user_can('edit_structure')))
+                        if((user_can('edit_post') || user_can('organize_agenda')))
                         return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
                             <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
-                            <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
-                            <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
                             </div>
                         );
                         else
                             return null;
-                    }
-                    else if('reorganize' == mode) {
-                        return (
-                            <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                    <div><strong>{datestring}</strong></div>
-                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} post_id={post_id} />
-                            <>{'reorganize' == mode && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={block.attrs?.time_allowed} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>}</>
-                            <>{'reorganize' == mode && <MoveButtons blockindex={blockindex} />}</>
-                            </div>
-                        );
                     }
                     else {
                         return (

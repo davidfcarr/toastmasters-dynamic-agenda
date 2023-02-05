@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 
-export function EditorAgendaNote(props) {
+export function SignupNote(props) {
   const editorRef = useRef(null);
   const {block, blockindex, replaceBlock} = props;
 
@@ -12,8 +12,8 @@ export function EditorAgendaNote(props) {
 
   return (
     <>
-     <h4>Agenda Note</h4>
-     <Editor
+    <h4>Signup Form Note</h4>
+      <Editor
         onInit={(evt, editor) => editorRef.current = editor}
         initialValue={block.innerHTML}
         init={{
@@ -24,7 +24,7 @@ export function EditorAgendaNote(props) {
         }}
       />
       <p><button className="tmform" onClick={save}>Update</button></p>
-      <p><em>Agenda notes are the "stage directions" for your meeting.</em></p>
+      <p><em>Signup notes are instructions for the signup form. They are not included on the print, view, or email versions of the agenda.</em></p>
     </>
   );
 }

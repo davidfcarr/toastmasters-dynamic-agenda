@@ -18,7 +18,7 @@ export function EditableNote(props) {
         insertBlock(blockindex,att,'wp4toastmasters/agendaedit','',editorRef.current.getContent());//no inner html, edithtml
         setInsert('');
       } else {
-        const submitnote = {'note':editorRef.current.getContent(),'uid':att.uid,'post_id':props.post_id};
+        const submitnote = {'note':editorRef.current.getContent(),'uid':att.uid,'post_id':props.post_id,'editable':att.editable};
         editEditable.mutate(submitnote);  
       }
   }
@@ -60,11 +60,11 @@ export function EditableNote(props) {
       }
   );
 
-  if(!submitted && (('edit' == props.mode) || insertBlock))
+  if(!submitted && ((['edit','reorganize'].includes(props.mode)) || insertBlock))
   return (
     <>
-    <>{!insertBlock && <h3>{att.editable}</h3>}</>
-    <>{insertBlock && <p><TextControl label="heading" value={att.editable} onChange={ (title) => {setAtt( (prev) => {return {...prev,'editable':title} } )} }  /></p>}</>
+    <h3>{att.editable}</h3>
+    <p><TextControl label="heading" value={att.editable} onChange={ (title) => {setAtt( (prev) => {return {...prev,'editable':title} } )} }  /></p>
       <Editor
         onInit={(evt, editor) => editorRef.current = editor}
         initialValue={block.edithtml}
@@ -75,7 +75,9 @@ export function EditableNote(props) {
           content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
         }}
       />
-<>{insertBlock && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={att.time_allowed} onChange={ (value) => { setAtt((prev) => { return {...prev,time_allowed:value} }  ); }} /></div></div>}</>      <button className="tmform" onClick={save}>Update</button>
+<>{insertBlock && <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={att.time_allowed} onChange={ (value) => { setAtt((prev) => { return {...prev,time_allowed:value} }  ); }} /></div></div>}</>            
+<p><button className="tmform" onClick={save}>Update</button></p>
+<p><em>Editable notes are for content that changes from meeting to meeting, such as a meeting theme.</em></p>
     </>
   );
 
@@ -84,6 +86,7 @@ export function EditableNote(props) {
     <>
     <h3>{att.editable}</h3>
     <SanitizedHTML innerHTML={block.edithtml} />
+    {(submitted && (('edit' == props.mode) || insertBlock)) && <p><button onClick={() => setSubmitted(false)}>Edit</button></p>}
     </>
   );
 }

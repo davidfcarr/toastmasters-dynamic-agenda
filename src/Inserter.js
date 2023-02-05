@@ -12,7 +12,7 @@ export function Inserter(props) {
     const [deletemode,setDeleteMode] = useState(false);
     const [att,setAtt] = useState({'uid':''});
     const [rolelist,setRolelist] = useState([]);
-    const {blockindex, insertBlock, moveBlock, post_id, makeNotification} = props;
+    const {blockindex, insertBlock, moveBlock, post_id, makeNotification, setRefetchInterval} = props;
     const editorRef = useRef(null);
 
     //https://delta.local/wp-json/rsvptm/v1/roles_list
@@ -20,9 +20,10 @@ export function Inserter(props) {
     
     const { isLoading, isSuccess, isError, data, error, refetch } =
     useQuery('rolelist', fetchRoles, { enabled: true, retry: 2, onSuccess, onError });
+//{!unfurl && <p><button className="blockmove insertbutton" onClick={() => {setUnfurl(true); setRefetchInterval(false);/*setInsert('')*/}}><Plus /> Insert</button></p>}
 
     function InsertControl() {
-        return <>{!unfurl && <button className="blockmove insertbutton" onClick={() => {setUnfurl(true), setInsert('wp4toastmasters/role')}}><Plus /> Insert</button>}{unfurl && <div><RadioControl className="radio-mode" selected={insert} label="Insert" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'}]}/></div>} {!(unfurl || deletemode) && <button className="blockmove deletebutton" onClick={() => {setDeleteMode(true)}}><Delete /> Delete</button>} {deletemode && <button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete')}}><Delete /> Confirm Delete</button>}</>
+        return <>{!(insert || deletemode) && <p><button className="blockmove deletebutton" onClick={() => {setDeleteMode(true);setRefetchInterval(false);}}><Delete /> Delete</button></p>} {deletemode && <p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete');setRefetchInterval(15000);}}><Delete /> Confirm Delete</button></p>} {!insert && <div><RadioControl className="radio-inserter radio-mode" selected={insert} label="Insert Below" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'}]}/></div>}</>
     }
     
     function fetchRoles() {
@@ -38,26 +39,8 @@ export function Inserter(props) {
     }
 
     function saveBlock () {
-        if(('wp4toastmasters/agendaedit' == insert)) {
-            let content = editorRef?.current?.getContent();
-            console.log('submit to editable meta', {'uid':att.uid,'note':content,'post_id':post_id});
-            editEditable.mutate({'uid':att.uid,'note':content,'post_id':post_id,'blockindex':blockindex});
-        }
-
-        let innerHTML = '';
-        if(('wp4toastmasters/agendanoterich2' == insert) || ('wp4toastmasters/signupnote' == insert)) {
-            innerHTML = editorRef?.current?.getContent();
-            innerHTML = innerHTML.replaceAll('<p>',' ');
-            innerHTML = innerHTML.replaceAll('</p>',' ');
-            innerHTML = '<p>'+innerHTML+'</p>';
-            if('wp4toastmasters/agendanoterich2' == insert) 
-                innerHTML = innerHTML.replaceAll('<p>','<p class="wp-block-wp4toastmasters-agendanoterich2">');
-            if('wp4toastmasters/signupnote' == insert)
-               innerHTML = innerHTML.replaceAll('<p>','<p class="wp-block-wp4toastmasters-signupnote">');
-            console.log(innerHTML);
-        }
-
-        insertBlock(blockindex,att,insert,innerHTML);
+        console.log('saveBlock called '+insert);
+        insertBlock(blockindex,att,insert);
         setInsert('');
     }
 
@@ -78,8 +61,28 @@ export function Inserter(props) {
     );
   
     function updateInsert(value) {
-        if('wp4toastmasters/role' == value)
+        if('wp4toastmasters/role' == value) {
             setAtt({'role':'','count':1,'time_allowed':0,'padding_time':0,'backup':false});
+            setRefetchInterval(false);//don't refetch while using form
+        }
+        else if('wp4toastmasters/agendaedit' == value)
+        {
+            insertBlock(blockindex,{'time_allowed':0,'uid':'note'+Date.now(),'editable':'New editable note'},value)
+            value = '';
+            setUnfurl(false);
+        }
+        else if ('wp4toastmasters/agendanoterich2' == value)
+            {
+                insertBlock(blockindex,{'time_allowed':0,'uid':'note'+Date.now()},value,'<p class="wp-block-wp4toastmasters-agendanoterich2">new agenda note</p>')
+                value = '';
+                setUnfurl(false);
+            }
+        else if ('wp4toastmasters/signupnote' == value)
+        {
+            insertBlock(blockindex,{'uid':'note'+Date.now()},value,'<p class="wp-block-wp4toastmasters-signupnote">new signup form note</p>')
+            value = '';
+            setUnfurl(false);
+        }
         setInsert(value);
     }
 
@@ -102,11 +105,9 @@ export function Inserter(props) {
     }
 
     if('wp4toastmasters/role' == insert) {
-        console.log('rolelist');
-        console.log(rolelist);
         return (
-            <>
-            <InsertControl />
+            <div className="insertroleform">
+            <h1>Insert Role Below</h1>
             <p><SelectControl label="Role" value={att.role} options={rolelist} onChange={(value) => {setAtt( (prev) => { return {...prev,'role':value, 'time_allowed':minimumTime(prev.time_allowed,value,prev.count)} }); }} /></p>
             {'custom' == att.role && <p><TextControl value={att.custom_role}  onChange={(value) => {setAtt( (prev) => { let newatt = {...prev,'custom_role':value}; return newatt; });  }} /></p>}
             <p><NumberControl label="Count" min="1" value={att.count} onChange={(value) => {setAtt( (prev) => { let newatt = {...prev,'count':value, 'time_allowed':minimumTime(prev.time_allowed,prev.role,value)}; return newatt; } ); }} /> <em>How many members can take this role?</em></p>
@@ -121,7 +122,7 @@ export function Inserter(props) {
             checked={ att.backup }
             onChange={ () => {setAtt( (prev) => { return {...prev,'backup': !att.backup}; } ); }} />
             <p><button className="blockmove" onClick={() => {saveBlock()}}>Save</button></p>
-           </>
+           </div>
         )    
     }
     if('wp4toastmasters/agendanoterich2' == insert) {
@@ -138,8 +139,8 @@ export function Inserter(props) {
               content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
             }}
           />
-            <p><NumberControl label="Time Allowed" min="0" value={att?.time_allowed} onChange={(value) => {setAtt( (prev) => { let newatt = {...prev,'time_allowed':value,'uid':'note'+Date.now()}; return newatt; });  }} /></p>
-            <p><button className="blockmove" onClick={() => {saveBlock()}}>Save</button></p>
+            <p><NumberControl label="Time Allowed" min="0"  value={att.time_allowed}  onChange={(value) => {setAtt( (prev) => { let newatt = {...prev,'time_allowed':value}; return newatt; });  }} /></p>
+            <p><button className="blockmove" onClick={() => {console.log('clicked save block agenda note'); saveBlock()}}>Save</button></p>
             <p>This text will appear on the agenda, with a timestamp if Time Allowed is set.</p>
            </>
         )    
@@ -158,7 +159,7 @@ export function Inserter(props) {
               content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
             }}
           />
-            <p><button className="blockmove" onClick={() => {saveBlock()}}>Save</button></p>
+            <p><button className="blockmove" onClick={() => {console.log('clicked save block signup note'); saveBlock();}}>Save</button></p>
             <p>This text will appear on the signup form, and <strong>NOT</strong> on the agenda.</p>
            </>
         )    

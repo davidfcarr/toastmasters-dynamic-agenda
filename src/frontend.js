@@ -15,9 +15,10 @@ window.addEventListener('load', function(event) {
     <React.StrictMode>
         <QueryClientProvider client={queryClient}>
             <Agenda post_id={post_id} />
-            <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
         </QueryClientProvider>
   </React.StrictMode>,
         document.getElementById('react-agenda'));
     //console.log('agenda div not found');
 });
+
+//<ReactQueryDevtools initialIsOpen={false} position="bottom-right" />

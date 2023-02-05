@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import { SelectControl, RadioControl } from '@wordpress/components';
+import { SanitizedHTML } from './SanitizedHTML';
+
 //import { AwesomeButton } from 'react-awesome-button';
 //import 'react-awesome-button/dist/styles.css';
 
@@ -9,11 +11,11 @@ export default function Suggest(props) {
   const [member,setMember] = useState(0);
   const [ccme,setCcme] = useState('0');
   const [notification,setNotification] = useState(null);
-  function makeNotification(message, error = false, rawhtml = false) {
-    setNotification({'message':message,'error':error,'rawHTML':''});
+  function makeNotification(message, error = false, rawhtml = '') {
+    setNotification({'message':message,'error':error,'rawHTML':rawhtml});
     setTimeout(() => {
         setNotification(null);
-    },5000);
+    },15000);
 }
 
 function send() {
@@ -43,7 +45,7 @@ function send() {
         .then((response) => {return response.json()})
         .then((responsedata) => {
             console.log(responsedata);
-            makeNotification('Message sent');
+            makeNotification('Message sent',false,responsedata.content);
                 });
                 //console.log(responsedata.status);
             }
@@ -65,8 +67,9 @@ function send() {
         }}
       />
       <RadioControl selected={ccme} label="Send To" onChange={(value)=> setCcme(value)} options={[{'label': 'Member', 'value':'0'},{'label': 'Member + CC me', 'value':'1'},{'label': 'Me Only', 'value':'2'}]}/>
-      {!notification && <p><button className="tmform" type="primary" onClick={send}>Send Suggestion</button></p>}
-      {notification && <><p>Sent!</p><div className={notification.error ? "tm-notification tm-notification-error suggestion-notification": "tm-notification tm-notification-success suggestion-notification"}>{notification.message}</div></>}
+      {notification && <><div className={notification.error ? "tm-notification tm-notification-error suggestion-notification": "tm-notification tm-notification-success suggestion-notification"}>{notification.message}</div></>}
+      {notification && notification.rawHTML && <div className="suggestion-preview"><SanitizedHTML innerHTML={notification.rawHTML} /></div>}
+      {(!notification || notification.error) && <p><button className="tmform" type="primary" onClick={send}>Send Suggestion</button></p>}
     </>
   );
 }

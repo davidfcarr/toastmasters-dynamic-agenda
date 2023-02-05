@@ -157,3 +157,55 @@ font-size: 14px;
 	font-size:large;
 	font-weight: bolder;
 }
+
+.reorgblock {
+	display: flex;
+}
+.reorgcolumn {
+	width: 50px;
+	/*height: 100%;*/
+	display: flex;
+	align-self: stretch;
+	border-left: thin solid  #7C2128;
+	border-top: thin solid  #7C2128;
+	border-bottom: thin solid  #7C2128;
+	padding-left: 5px;
+}
+.reorganize {
+	flex: 1;
+	/*height: 100%;*/
+}
+
+.reorgupdown {
+	align-self: center;
+}
+.block {
+	margin-bottom: 5px;
+}
+.insertroleform {
+	margin-top: 20px;
+	border: medium solid #7C2128;
+	padding: 5px;
+}
+
+.suggestion-preview {
+	margin: 10px;
+	background-color: lightgray;
+	padding: 5px;
+	border: 5px;
+}
+.reorgdragup {
+	width: 50px;
+	float: left;
+}
+.reorgdragdown {
+	width: 50px;
+	float: right;
+}
+.radio-inserter {
+	border: medium solid #7C2128;
+	border-radius: 5px;
+	padding: 10px;
+	margin-bottom: 10px;
+	flex-flow: row;
+}

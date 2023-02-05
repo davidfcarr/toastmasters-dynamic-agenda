@@ -4,8 +4,7 @@ import { __experimentalNumberControl as NumberControl, SelectControl, ToggleCont
 import EditorMCE from './EditorMCE.js'
 import ProjectChooser from "./ProjectChooser.js";
 import Suggest from "./Suggest.js";
-import MoveAssignment from "./MoveAssignment.js";
-import {Up, Down} from './icons.js';
+import {Up, Down, Top, Close} from './icons.js';
 
 export default function RoleBlock (props) {
     const {agendadata, mode, blockindex, assignments, attrs, updateAssignment, updateAttrs, post_id} = props;
@@ -96,6 +95,25 @@ export default function RoleBlock (props) {
         return m?.value;
     }
 
+    function MoveButtons(props) {
+    const {assignments, roleindex, filledslots, openslots, attrs, shownumber} = props;
+    return(
+    <p><span className="moveup">{assignments.length > 1 && roleindex > 0 && <>
+    <button  className="tmform" onClick={() => {moveItem(roleindex,0)}}>
+    <Top type={attrs.role+' '+shownumber}/></button>
+    <button  className="tmform" onClick={() => {moveItem(roleindex, roleindex-1)}}>
+    <Up type={attrs.role+' '+shownumber} /></button>
+    </>}</span> 
+    <span className="movedown">{assignments.length > 1 && roleindex < (assignments.length - 1) && attrs.role.search('Backup') < 0 && 
+    <button className="tmform" onClick={() => {moveItem(roleindex, roleindex+1)}}>
+    <Down type={attrs.role+' '+shownumber} />
+    </button>}</span>
+    <span className="closegaps">{filledslots.length > 0 && openslots.length > 0 && (filledslots[filledslots.length-1] > openslots[0]) && <button className="tmform" onClick={removeBlanks}><Close /></button>}</span>
+    </p>
+    )        
+
+
+    }
 
     if(['reorganize'].includes(mode))
         return (
@@ -116,11 +134,10 @@ export default function RoleBlock (props) {
             }
             let id = 'role'+attrs.role.replace(' ','')+roleindex;
             return (<div id={id} key={id}>
-                <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ console.log('click blockindex '+blockindex+' roleindex '+roleindex); updateAssignment({'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count})}} >Reset to Open Role</button>}</h3>
-            <p><span className="moveup">{assignments.length > 1 && roleindex > 0 && <><button  className="tmform" onClick={() => {moveItem(roleindex,0)}}><Up /> Move {attrs.role} {shownumber} to Top</button> <button  className="tmform" onClick={() => {moveItem(roleindex, roleindex-1)}}><Up /> Move {attrs.role} {shownumber} Up</button></>}</span> <span className="movedown">{assignments.length > 1 && roleindex < (assignments.length - 1) && attrs.role.search('Backup') < 0 && <button className="tmform" onClick={() => {moveItem(roleindex, roleindex+1)}}><Down /> Move {attrs.role} {shownumber} Down</button>}</span></p>
+                <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ console.log('click blockindex '+blockindex+' roleindex '+roleindex); updateAssignment({'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count})}} >Remove</button>}</h3>
+            <MoveButtons assignments={assignments} roleindex={roleindex} filledslots={filledslots} openslots={openslots} attrs={attrs} shownumber={shownumber} />
             </div>)
         } )}
-        <div className="closegaps">{filledslots.length > 0 && openslots.length > 0 && (filledslots[filledslots.length-1] > openslots[0]) && <p><button className="tmform" onClick={removeBlanks}>Close Gaps</button></p>}</div>
         </>
         );    
 
@@ -142,17 +159,16 @@ export default function RoleBlock (props) {
             }
             let id = 'role'+attrs.role+roleindex;
             return (<div id={id} key={id}>
-                <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ console.log('click blockindex '+blockindex+' roleindex '+roleindex); updateAssignment({'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count})}} >Reset to Open Role</button>}</h3>
+                <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ console.log('click blockindex '+blockindex+' roleindex '+roleindex); updateAssignment({'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count})}} >Remove</button>}</h3>
                 <>{assignment.ID < 1 && <p><button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></p>}</>
             <>{'suggest' == mode && !assignment.ID && <Suggest memberlist={memberlist} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
             <>{'edit' == mode && <SelectControl label="Select Member" value={assignment.ID} options={memberlist} onChange={(id) => { updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
             <>{'suggest' != mode && ('edit' == mode || (current_user_id == assignment.ID)) && (assignment.ID > 0) && (!['reorganize','reorganize'].includes(mode)) && (role.search('Speaker') > -1)  && (role.search('Backup') == -1) && <ProjectChooser attrs={attrs} assignment={assignment} project={assignment.project} title={assignment.title} intro={assignment.intro} manual={assignment.manual} maxtime={assignment.maxtime} display_time={assignment.display_time} updateAssignment={updateAssignment} roleindex={roleindex} blockindex={blockindex} /> }</>
 
-            <p><span className="moveupedit">{!!('edit' == mode) && assignments.length > 1 && roleindex > 0 && <><button  className="tmform" onClick={() => {moveItem(roleindex,0)}}><Up /> Move {attrs.role} {shownumber} to Top</button> <button  className="tmform" onClick={() => {moveItem(roleindex, roleindex-1)}}><Up /> Move {attrs.role} {shownumber} Up</button></>}</span> <span classname="movedownedit">{!!('edit' == mode) && !!(assignments.length > 1) && !!(roleindex < (assignments.length - 1)) && !!(attrs.role.search('Backup') < 0) && <button className="tmform" onClick={() => {moveItem(roleindex, roleindex+1)}}><Down /> Move {attrs.role} {shownumber} Down</button>}</span> </p>
+            <>{!!('edit' == mode) && assignments.length > 1 &&             <MoveButtons assignments={assignments} roleindex={roleindex} filledslots={filledslots} openslots={openslots} attrs={attrs} shownumber={shownumber} />}</>
 
             </div>)
         } )}
-        <div className="closegaps">{!!('edit' == mode && filledslots.length && openslots.length && (filledslots[filledslots.length-1] > openslots[0])) && <p><button className="tmform" onClick={removeBlanks}>Close Gaps</button></p>}</div>
         </>
     );
 
