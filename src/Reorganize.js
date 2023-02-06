@@ -1,21 +1,19 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
-import {useQuery,useMutation, useQueryClient} from 'react-query';
 import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
 import {Inserter} from "./Inserter.js";
-import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {SignupNote} from './SignupNote.js';
 import {EditableNote} from './EditableNote.js';
-import {Up, Down, Delete, Move} from './icons.js';
+import {Up, Down} from './icons.js';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 export function Reorganize(props) {
     const {data, mode, multiAssignmentMutation,updateAgenda,ModeControl,post_id,updateAssignment,makeNotification,setRefetchInterval} = props;
-    
+    const [showControls,setShowControls] = useState(true);    
     if('reorganize' != mode)
         return null;
     
@@ -139,7 +137,9 @@ export function Reorganize(props) {
         minHeight: "52px",
       
         // change background colour if dragging
-        background: isDragging ? "lightgreen" : "lightgrey",
+        background: isDragging ? "lightgreen" : "#EFEFEF",
+        borderBottom: "medium solid #7C2128",
+        marginBottom: "5px",
       
         // styles we need to apply on draggables
         ...draggableStyle
@@ -180,7 +180,7 @@ export function Reorganize(props) {
                   block.blockName.replace(/^[^/]+\//,'');
 
                   return (
-                  <div classname="reorgdrag">
+                  <div className="reorgdrag">
                   <div className="reorgdragup"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }><Up /></button></div>
                   <div className="reorgdragdown"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }><Down /></button></div>
                   <div className="reorganize-drag">
@@ -201,32 +201,40 @@ export function Reorganize(props) {
                   )}
                 </Draggable>
                 </div>
-                {'wp4toastmasters/role' == block.blockName && (<div>
+                {showControls && 'wp4toastmasters/role' == block.blockName && (<div>
                   <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>
                     <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                 </div>)}
-                {'wp4toastmasters/agendaedit' == block.blockName && (
+                {showControls && 'wp4toastmasters/agendaedit' == block.blockName && (
                     <div>
                     <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>
                     </div>
                 ) }
-                {'wp4toastmasters/agendanoterich2' == block.blockName && (
+                {showControls && 'wp4toastmasters/agendanoterich2' == block.blockName && (
                     <div>
                     <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>
                     </div>
                 ) }
-                {'wp4toastmasters/signupnote' == block.blockName && (
+                {showControls && 'wp4toastmasters/signupnote' == block.blockName && (
                     <div>
                     <SignupNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                     </div>
                 ) }
-                {block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
-                <Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />
-                {provided.placeholder}
-                </div>
+                {showControls && block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
+                {showControls && <Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />}
+                <ToggleControl label="Show Contols"
+            help={
+                (true == showControls)
+                    ? 'Show'
+                    : 'Hide'
+            }
+            checked={ showControls }
+            onChange={ () => {let newvalue = !showControls; setShowControls( newvalue ); }} />
+            {provided.placeholder}
+            </div>
                   )
                 }
                 if('wp4toastmasters/role' == block.blockName) {

@@ -54,7 +54,7 @@ function agenda_block_type_metadata($metadata) {
 function get_dynamic_agenda_script_handle ($type) {
 return generate_block_asset_handle( 'wp4toastmasters/toastmasters-dynamic-agenda', $type);
 }
-if(isset($_GET['newsignup'])) {
+if(isset($_GET['newsignup'])|| get_option('wp4t_newSignupDefault')) {
 	add_action('wp_enqueue_scripts', 'dynamic_agenda_script');
 }
 function dynamic_agenda_script() {

@@ -7,6 +7,8 @@ export function TemplateAndSettings (props) {
     const {data, makeNotification, user_can} = props;
     const [allowOrganizeAgenda, setAllowOrganizeAgenda] = useState(data.subscribers_can_organize_agenda);
     const [allowEditSignups, setAllowEditsignups] = useState(data.subscribers_can_edit_signups);
+    const [newSignupDefault, setNewSignupDefault] = useState(data.newSignupDefault);
+    
     const [newtemplate, setNewTemplate] = useState(0);
     let templates = data.upcoming.map((item) => {if(item.label.indexOf('emplate')) return item});
     templates.push({'value':0,'label':'Choose Template'});
@@ -104,6 +106,14 @@ const permissionsMutation = useMutation(
             }
             checked={ allowOrganizeAgenda }
             onChange={ () => {let newvalue = !allowOrganizeAgenda; setAllowOrganizeAgenda( newvalue ); permissionsMutation.mutate({'key':'organize_agenda','value':newvalue}); }} />
+        <ToggleControl label="Use This Signup Form by Default"
+            help={
+                (true == newSignupDefault)
+                    ? 'Yes'
+                    : 'No'
+            }
+            checked={ newSignupDefault }
+            onChange={ () => {let newvalue = !newSignupDefault; setNewSignupDefault( newvalue ); permissionsMutation.mutate({'key':'newSignupDefault','value':newvalue}); }} />
 
         <p><em>You can decide whether in addition to signing up for roles, members are able to edit assignments for others or insert/delete/move roles and content blocks on the agenda.</em></p></div>)}</>
 </div>
