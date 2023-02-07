@@ -30,9 +30,8 @@ export function Reorganize(props) {
     function getMoveAbleBlocks () {
         let moveableBlocks = [];
         data.blocksdata.map((block, blockindex) => {
-            if(('wp4toastmasters/role' == block.blockName) || ('wp4toastmasters/agendanoterich2' == block.blockName) || ('wp4toastmasters/agendaedit' == block.blockName))
-                moveableBlocks.push(blockindex);
-            } )
+            moveableBlocks.push(blockindex);
+        })
         return moveableBlocks;
     }
 
@@ -82,14 +81,13 @@ export function Reorganize(props) {
             (block, index) => {
                 newblocks.push(block);
                 if(index == blockindex) {
-                    console.log('newblock',{'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
+                    console.log('newblock',{'blockName': blockname, 'DnDid':'temp'.Date.now(),'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                     newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                 }
             }
         );
         data.blocksdata = newblocks;
         updateAgenda.mutate(data);
-        
     }
 
     function replaceBlock(blockindex, newblock) {
@@ -109,12 +107,14 @@ export function Reorganize(props) {
         updateAgenda.mutate(data);
     }
 
+    function makeExcerpt(html) {
+        let excerpt =  html.replaceAll(/<[^>]+>/g,' ');
+        if(excerpt.length > 150)
+        excerpt = excerpt.substring(0,150) + '...';
+        return excerpt;
+    }
+
     function onDragEnd(result) {
-      /*
-      console.log('onDragEnd',result);
-      console.log('onDragEnd source',result.source.index);
-      console.log('onDragEnd destination',result.destination.index);
-      */
       moveBlock(result.source.index,result.destination.index);
     }
 
@@ -171,8 +171,8 @@ export function Reorganize(props) {
                     date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
                     datestring = datestring+' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 }
-                console.log('draggable block',block);
-                console.log('draggable blockindex',blockindex);
+                //console.log('draggable block',block);
+                //console.log('draggable blockindex',blockindex);
                 // block.assignments.map((assignment) => {return <p>{assignment.name}</p>})
                 if(!block.blockName)
                     return null;
@@ -184,8 +184,11 @@ export function Reorganize(props) {
                   <div className="reorgdragup"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }><Up /></button></div>
                   <div className="reorgdragdown"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }><Down /></button></div>
                   <div className="reorganize-drag">
-                  <Draggable key={block.attrs.uid} draggableId={block.attrs.uid} index={blockindex}>
-                  {(provided, snapshot) => (
+                  <Draggable key={block.DnDid} draggableId={block.DnDid} index={blockindex}>
+                  {(provided, snapshot) => { //console.log('is dragging',snapshot.isDragging);
+                  if(snapshot.isDragging && showControls)
+                    setShowControls(false);
+                  return (
                     <div 
                       ref={provided.innerRef}
                       {...provided.draggableProps}
@@ -196,11 +199,19 @@ export function Reorganize(props) {
                       )}
                     >
                     <div><strong>{datestring}</strong></div>
-                    <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')} {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>}</h2>
+                    <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')} {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
                     </div>
-                  )}
+                  ) } }
                 </Draggable>
                 </div>
+                <ToggleControl label="Show Details"
+            help={
+                (true == showControls)
+                    ? 'Show'
+                    : 'Hide'
+            }
+            checked={ showControls }
+            onChange={ () => {let newvalue = !showControls; setShowControls( newvalue ); }} />
                 {showControls && 'wp4toastmasters/role' == block.blockName && (<div>
                   <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>
@@ -225,14 +236,6 @@ export function Reorganize(props) {
                 ) }
                 {showControls && block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
                 {showControls && <Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />}
-                <ToggleControl label="Show Contols"
-            help={
-                (true == showControls)
-                    ? 'Show'
-                    : 'Hide'
-            }
-            checked={ showControls }
-            onChange={ () => {let newvalue = !showControls; setShowControls( newvalue ); }} />
             {provided.placeholder}
             </div>
                   )

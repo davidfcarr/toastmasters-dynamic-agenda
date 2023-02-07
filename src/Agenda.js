@@ -1,7 +1,7 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
-import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
+import { SelectControl, ToggleControl, RadioControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
 import {Inserter} from "./Inserter.js";
@@ -248,7 +248,7 @@ export default function Agenda() {
             (block, index) => {
                 newblocks.push(block);
                 if(index == blockindex) {
-                    console.log('newblock',{'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
+                    console.log('newblock',{'blockName': blockname, 'DnDid':'temp'.Date.now(), 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                     newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                 }
             }
