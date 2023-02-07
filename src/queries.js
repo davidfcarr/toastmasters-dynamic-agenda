@@ -1,34 +1,10 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
-import { SelectControl, ToggleControl, RadioControl } from '@wordpress/components';
-import RoleBlock from "./RoleBlock.js";
-import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
-import {Inserter} from "./Inserter.js";
-import {TemplateAndSettings} from "./TemplateAndSettings.js";
-import {SanitizedHTML} from "./SanitizedHTML.js";
-import {EditorAgendaNote} from './EditorAgendaNote.js';
-import {EditableNote} from './EditableNote.js';
-import {Up, Down, Delete} from './icons.js';
-import {Reorganize} from './Reorganize';
 
-export default function Agenda() {
-    let initialPost = 0;
-    if('rsvpmaker' == wpt_rest.post_type) {
-        initialPost = wpt_rest.post_id;
-    } else {
-        initialPost = new URL(document.location).searchParams.get('post_id');
-        if(!initialPost)
-            initialPost = 0;
-    }
-    const [post_id, setPostId] = useState(initialPost);
-    const [current_user_id,setCurrentUserId] = useState(0);
-    const [mode, setMode] = useState('signup');
-    const [updating, setUpdating] = useState('');
-    const [showNotes, setShowNotes] = useState(true);
-    const [updated,setUpdated] = useState(new Date());
-    const [refetchInterval, setRefetchInterval] = useState(30000);
+const [refetchInterval, setRefetchInterval] = useState(30000);
     
+export function getBlocksDate() {
     const queryClient = useQueryClient();
     const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
     useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: refetchInterval });
@@ -40,6 +16,8 @@ export default function Agenda() {
         const {permissions} = axiosdata?.data;
         console.log('permissions',permissions);
     }
+}
+
 
     function calcTimeAllowed(attrs) {
         let time_allowed = 0;
@@ -329,14 +307,6 @@ function ModeControl() {
     <div id="fixed-mode-control">
         {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
         <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
-        {['signup','edit'].includes(mode) && <ToggleControl label="Show Notes"
-            help={
-                (true == showNotes)
-                    ? 'Show Notes'
-                    : 'Roles Only'
-            }
-            checked={ showNotes }
-            onChange={ () => {let newvalue = !showNotes; setShowNotes( newvalue ); }} />}
         </div>)
 }
     function user_can(permission) {
@@ -396,85 +366,61 @@ function ModeControl() {
                 }
                 if(!block.blockName)
                     return null;
-                    if('signup' == mode) {
-                        if('wp4toastmasters/role' == block.blockName) {
-                            block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
-                            return (
+                if('wp4toastmasters/role' == block.blockName) {
+                    block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
+                    return (
+                    <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
+                    <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
+                    <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                    </div>
+                    )
+                }
+                if('wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('organize_agenda')) ) {
+                    return (
+                    <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
+                    <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
+                    </div>)
+                }
+                else if('wp4toastmasters/agendanoterich2' == block.blockName) {
+                    return (
+                    <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                    <div><strong>{datestring}</strong></div>
+                    <SanitizedHTML innerHTML={block.innerHTML} />
+                    </div>)
+                }
+                //wp:wp4toastmasters/agendaedit {"editable":"Welcome and Introductions","uid":"editable16181528933590.29714489144034184","time_allowed":"5","inline":true}
+                if('wp4toastmasters/agendaedit' == block.blockName) {
+                    if('edit' == mode) {
+                        if((user_can('edit_post') || user_can('organize_agenda')))
+                        return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                            <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                            <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
                             </div>
-                            )
-                        }    
-                        else if('wp4toastmasters/agendaedit' == block.blockName) {
-                            return (
-                                <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                                <div><strong>{datestring}</strong></div>
-                                <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
-                                </div>
-                            );
-                        }
-                        else if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName) {
-                            return (
-                            <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <div><strong>{datestring}</strong></div>
-                            <SanitizedHTML innerHTML={block.innerHTML} />
-                            </div>)
-                        }
-                        else if(showNotes && block.innerHTML) {
-                            // agenda notes, signup notes and other raw content
-                            return (<div key={'block'+blockindex} id={'block'+blockindex} className="block" >
-                            <SanitizedHTML innerHTML={block.innerHTML} />
-                            </div>);
-                        }
+                        );
                         else
                             return null;
-                    }//end signup blocks
-                    else if ('edit' == mode) {
-                        if('wp4toastmasters/role' == block.blockName) {
-                            block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
-                            return (
+                    }
+                    else {
+                        return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                            <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                    <div><strong>{datestring}</strong></div>
+                            <EditableNote mode={mode} block={block} uid={block.attrs.uid} makeNotification={makeNotification} post_id={post_id} />
                             </div>
-                            )
-                        }
-                        if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('organize_agenda')) ) {
-                            return (
-                            <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <div><strong>{datestring}</strong></div>
-                            <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
-                            </div>)
-                        }
-                        else if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName) {
-                            return (
-                            <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <div><strong>{datestring}</strong></div>
-                            <SanitizedHTML innerHTML={block.innerHTML} />
-                            </div>)
-                        }
-                        else
-                            return null;
-                    }//end edit blocks
-                    else if ('suggest' == mode) {
-                        if('wp4toastmasters/role' == block.blockName) {
-                            block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
-                            return (
-                            <div key={'block'+blockindex} id={'block'+blockindex} className="block">
-                            <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                            <SpeakerTimeCount block={block} makeNotification={makeNotification} />
-                            </div>
-                            )
-                        }
-                        else 
-                            return null;
-                    }//end suggest blocks
-                    else
-                        return null;
-            })}
+                        );
+                    }
+
+                }
+                if(raw.includes(block.blockName) && block.innerHTML)
+                    return (<div key={'block'+blockindex} id={'block'+blockindex} className="block" >
+                    <SanitizedHTML innerHTML={block.innerHTML} />
+                    </div>);
+                else
+                    return null; //<p key={'block'+blockindex} id={'block'+blockindex} className="block">{blockindex}: {block.blockName} <button onClick={() => { moveBlock(blockindex, 'down') } }>Move Down</button> <button onClick={() => { moveBlock(blockindex, 'up') } }>Move Up</button></p>
+                } )}
+                    
         </div>
-)}
+    );
+}

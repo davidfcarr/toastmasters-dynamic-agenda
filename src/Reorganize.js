@@ -81,7 +81,7 @@ export function Reorganize(props) {
             (block, index) => {
                 newblocks.push(block);
                 if(index == blockindex) {
-                    console.log('newblock',{'blockName': blockname, 'DnDid':'temp'.Date.now(),'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
+                    console.log('newblock',{'blockName': blockname, 'DnDid':'temp'+Date.now(),'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                     newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                 }
             }
