@@ -7,9 +7,11 @@ import Suggest from "./Suggest.js";
 import {Up, Down, Top, Close} from './icons.js';
 
 export default function RoleBlock (props) {
-    const {agendadata, mode, blockindex, assignments, attrs, updateAssignment, updateAttrs, post_id} = props;
+    let {agendadata, mode, blockindex, assignments, attrs, updateAssignment, updateAttrs, post_id} = props;
     const {current_user_id, current_user_name} = agendadata;
     const [memberlist,setMemberList] = useState([{'value':0,'label':'Loading ...'}]);
+    if(!attrs.role)
+        return null;
     let roletagbase = '_'+attrs.role.replaceAll(' ','_')+'_';
     const [viewTop,setViewTop] = useState('');
     let roles = [];
@@ -115,7 +117,7 @@ export default function RoleBlock (props) {
 
     }
 
-    if(['reorganize'].includes(mode))
+    if(['reorganize'].includes(mode) && Array.isArray(assignments))
         return (
         <>
         {assignments.map( (assignment, roleindex) => {
@@ -140,6 +142,9 @@ export default function RoleBlock (props) {
         } )}
         </>
         );    
+
+    if(!Array.isArray(assignments))
+        assignments = [{'ID':0}];
 
     return (
         <>

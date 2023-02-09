@@ -9,6 +9,7 @@ import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
+import {SignupNote} from './SignupNote.js';
 import {Up, Down, Delete} from './icons.js';
 import {Reorganize} from './Reorganize';
 
@@ -328,15 +329,15 @@ function ModeControl() {
     return (
     <div id="fixed-mode-control">
         {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
-        <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
-        {['signup','edit'].includes(mode) && <ToggleControl label="Show Notes"
+        {['signup','edit'].includes(mode) && <div className="showtoggle"><ToggleControl label="Show Notes"
             help={
                 (true == showNotes)
                     ? 'Show Notes'
                     : 'Roles Only'
             }
             checked={ showNotes }
-            onChange={ () => {let newvalue = !showNotes; setShowNotes( newvalue ); }} />}
+            onChange={ () => {let newvalue = !showNotes; setShowNotes( newvalue ); }} /></div>}
+        <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
         </div>)
 }
     function user_can(permission) {
@@ -357,7 +358,6 @@ function ModeControl() {
     const ignore = ['wp4toastmasters/agendanoterich2','wp4toastmasters/milestone','wp4toastmasters/help']
     let date = new Date(data.datetime);
     const dateoptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    let timestamp = date.getMilliseconds();
     let datestring = '';
     if(!post_id)
         setPostId(data.post_id);
@@ -373,7 +373,7 @@ function ModeControl() {
         return(
             <div className="agendawrapper">
             <ModeControl />
-            <TemplateAndSettings user_can={user_can} data={data} makeNotification={makeNotification} />
+            <TemplateAndSettings setPostId={setPostId} user_can={user_can} data={data} makeNotification={makeNotification} />
             </div>
         );
     }
@@ -384,21 +384,24 @@ function ModeControl() {
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
-            <h4>{date.toLocaleDateString('en-US',dateoptions)}</h4>
+            <h4>{date.toLocaleDateString('en-US',dateoptions)} {data.is_template && <span>(Template)</span>}</h4>
             <ModeControl />
-            {data.blocksdata.map((block, blockindex) => {
+            {!Array.isArray(data.blocksdata) && <p>Error loading agenda blocks array.</p>}
+            {Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
                 datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 if(block?.attrs?.time_allowed) {
                     console.log(block.blockName+' role '+block?.attrs?.role+' blocktime'+date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true}));
                     console.log('blocktime add '+block.attrs.time_allowed+' minutes');
                     date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
+                    if(block.attrs.padding_time)
+                        date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.padding_time) * 60000) );
                     datestring = datestring+' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 }
                 if(!block.blockName)
                     return null;
                     if('signup' == mode) {
                         if('wp4toastmasters/role' == block.blockName) {
-                            block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
+                            Array.isArray(block.assignments) && block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
@@ -407,7 +410,7 @@ function ModeControl() {
                             </div>
                             )
                         }    
-                        else if('wp4toastmasters/agendaedit' == block.blockName) {
+                        else if(showNotes && 'wp4toastmasters/agendaedit' == block.blockName) {
                             return (
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
@@ -421,6 +424,9 @@ function ModeControl() {
                             <div><strong>{datestring}</strong></div>
                             <SanitizedHTML innerHTML={block.innerHTML} />
                             </div>)
+                        }
+                        else if (showNotes && 'wp4toastmasters/context' == block.blockName ) {
+                            return (<>{ block.innerBlocks.map( (ib) => { return <SanitizedHTML innerHTML={ib.innerHTML} /> } ) }</>);
                         }
                         else if(showNotes && block.innerHTML) {
                             // agenda notes, signup notes and other raw content
@@ -442,18 +448,18 @@ function ModeControl() {
                             </div>
                             )
                         }
-                        if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName && ('edit' == mode) && (user_can('edit_post') || user_can('organize_agenda')) ) {
+                        if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName && (user_can('edit_post') || user_can('organize_agenda')) ) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
                             <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                             </div>)
                         }
-                        else if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName) {
+                        else if(showNotes && 'wp4toastmasters/signupnote' == block.blockName && (user_can('edit_post') || user_can('organize_agenda'))) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <SanitizedHTML innerHTML={block.innerHTML} />
+                            <SignupNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                             </div>)
                         }
                         else

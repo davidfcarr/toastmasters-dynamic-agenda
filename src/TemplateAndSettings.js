@@ -4,45 +4,30 @@ import {useQuery,useMutation, useQueryClient} from 'react-query';
 import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
 
 export function TemplateAndSettings (props) {
-    const {data, makeNotification, user_can} = props;
+    const {data, makeNotification, user_can, setPostId} = props;
     const [allowOrganizeAgenda, setAllowOrganizeAgenda] = useState(data.subscribers_can_organize_agenda);
     const [allowEditSignups, setAllowEditsignups] = useState(data.subscribers_can_edit_signups);
     const [newSignupDefault, setNewSignupDefault] = useState(data.newSignupDefault);
-    
+    const [templateToEdit, setTemplateToEdit] = useState(data.is_template ? data.post_id: data.has_template);
+
     const [newtemplate, setNewTemplate] = useState(0);
-    let templates = data.upcoming.map((item) => {if(item.label.indexOf('emplate')) return item});
+    let templates = data.upcoming.filter((item) => {if(item.label.indexOf('emplate') > 0) { return true }});
     templates.push({'value':0,'label':'Choose Template'});
+
+    function currentlyEditing() {
+        let response = 'an event without a template';
+        if(data.has_template)
+            response = 'an event based on a template';
+        else if (data.is_template)
+            response = 'a template';
+        return response;
+    }
 
     const queryClient = useQueryClient();
 
     const templateMutation = useMutation(
         async (change) => { return await apiClient.post("json_copy_post", change)},
         {
-            /*
-            onMutate: async (assignment) => {
-                await queryClient.cancelQueries(['blocks-data',post_id]);
-                const previousData = queryClient.getQueryData(['blocks-data',post_id]);
-                queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                    //function passed to setQueryData
-                    const {blockindex,roleindex} = assignment;
-                    const {data} = oldQueryData;
-                    const {blocksdata} = data;
-                    blocksdata[blockindex].assignments[roleindex] = assignment;
-                    const newdata = {
-                        ...oldQueryData, data: {...data,blocksdata: blocksdata}
-                    };
-                    //console.log('modified query to return',newdata);
-                    return newdata;
-                }) 
-                makeNotification('Updating ...');
-                return {previousData}
-            },
-            onSettled: (data, error, variables, context) => {
-                console.log('onsettled variables', variables);
-                queryClient.invalidateQueries(['blocks-data',post_id]);
-                makeNotification('Updated assignment: '+variables.role,true);
-            },
-            */
             onSuccess: (data, error, variables, context) => {
                 console.log('template change success',data);
                 console.log('original variables',variables);
@@ -55,14 +40,9 @@ export function TemplateAndSettings (props) {
                     return newdata;
                 }) 
                 queryClient.invalidateQueries(['blocks-data',data.data.post_id]);
-                //makeNotification('Template updated.',false,[{'template_prompt':data.data.has_template}]);
-                //queryClient.setQueryData("blocks-data", data);
-                //queryClient.invalidateQueries(['blocks-data',post_id]);
-                //makeNotification('Updated assignment',data.data.prompt);
             },
             onError: (err, variables, context) => {
                 console.log('mutate template error',err);
-                //queryClient.setQueryData("blocks-data", context.previousData);
             },
         }
 );
@@ -76,7 +56,6 @@ const permissionsMutation = useMutation(
         },
         onError: (err, variables, context) => {
             console.log('mutate template error',err);
-            //queryClient.setQueryData("blocks-data", context.previousData);
         },
     }
 );
@@ -84,10 +63,15 @@ const permissionsMutation = useMutation(
     return (
         <div>
         <h2>Template Options and Settings</h2>
+        <p>Currently editing <em>{currentlyEditing()}</em></p>
+        <SelectControl label="Edit Template" value={templateToEdit} options={templates} onChange={(value) => setTemplateToEdit(parseInt(value))} />
+        <p><button className="tmform" onClick={() => { makeNotification('Updating ...'); setPostId(templateToEdit);}}>Edit</button></p>
         <>{data.has_template && <div><p><button className="tmform" onClick={() => { let mymutation = {'copyfrom':data.post_id,'copyto':data.has_template,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); makeNotification('Template '+data.has_template+' updated.',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
         <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+data.post_id}>Create/Update</a> - copy content to new and existing events</p>}</>
-        <SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
+        <>{data.has_template && (<><SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
         <p><button className="tmform" onClick={() => {  makeNotification('Updating ...'); let mymutation = {'copyfrom':newtemplate,'copyto':data.post_id,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
+        </>)}</>
+        
         <>{user_can('manage_options') && (
         <div className="adminonly"><h3>Administrator Only Options</h3>
         <ToggleControl label="All Members Can Edit Signups"
