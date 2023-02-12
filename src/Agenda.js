@@ -12,6 +12,7 @@ import {EditableNote} from './EditableNote.js';
 import {SignupNote} from './SignupNote.js';
 import {Up, Down, Delete} from './icons.js';
 import {Reorganize} from './Reorganize';
+import {Absence} from './Absence.js';
 
 export default function Agenda() {
     let initialPost = 0;
@@ -27,15 +28,16 @@ export default function Agenda() {
     const [mode, setMode] = useState('signup');
     const [updating, setUpdating] = useState('');
     const [showNotes, setShowNotes] = useState(true);
-    const [updated,setUpdated] = useState(new Date());
+    const [scrollTo,setScrollTo] = useState('react-agenda');
     const [refetchInterval, setRefetchInterval] = useState(30000);
-    
     const queryClient = useQueryClient();
     const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
     useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: refetchInterval });
     function fetchBlockData() {
         return apiClient.get('blocks_data/'+post_id);
     }
+
+    useEffect(() => {scrolltoId(scrollTo); if('react-agenda' != scrollTo) setScrollTo('react-agenda'); },[mode])
     
     if(axiosdata) {
         const {permissions} = axiosdata?.data;
@@ -61,14 +63,11 @@ export default function Agenda() {
                 console.log('scroll to id could not find element '+id);
                 return;
             }
+        console.log('scroll to id '+id);
         access.scrollIntoView({behavior: 'smooth'}, true);
     }
 
     //start from the top
-    useEffect( () => {
-        scrolltoId('react-agenda');
-    },
-    [mode]);
     
     const assignmentMutation = useMutation(
             async (assignment) => { return await apiClient.post("json_assignment_post", assignment)},
@@ -97,14 +96,6 @@ export default function Agenda() {
                     queryClient.invalidateQueries(['blocks-data',post_id]);
                     makeNotification('Updated assignment: '+variables.role,true);
                 },
-                /*
-                onSuccess: (data, error, variables, context) => {
-                    console.log('assignment update success',data);
-                    queryClient.setQueryData("blocks-data", data);
-                    queryClient.invalidateQueries(['blocks-data',post_id]);
-                    makeNotification('Updated assignment',data.data.prompt);
-                },
-                */
                 onError: (err, variables, context) => {
                     console.log('mutate assignment error',err);
                     queryClient.setQueryData("blocks-data", context.previousData);
@@ -337,7 +328,7 @@ function ModeControl() {
             }
             checked={ showNotes }
             onChange={ () => {let newvalue = !showNotes; setShowNotes( newvalue ); }} /></div>}
-        <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> setMode(value)} options={modeoptions}/>
+        <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> {setScrollTo('react-agenda');setMode(value);}} options={modeoptions}/>
         </div>)
 }
     function user_can(permission) {
@@ -407,6 +398,7 @@ function ModeControl() {
                             <div><strong>{datestring}</strong></div>
                             <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
                             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                            <p><button onClick={() => {setScrollTo('block'+blockindex);setMode('edit')}}>Edit</button> <button onClick={() => {setScrollTo('block'+blockindex);setMode('suggest')}}>Suggest</button></p>
                             </div>
                             )
                         }    
@@ -415,6 +407,7 @@ function ModeControl() {
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
                                 <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                                <p><button onClick={() => {setScrollTo('block'+blockindex);setMode('edit')}}>Edit</button></p>
                                 </div>
                             );
                         }
@@ -434,6 +427,10 @@ function ModeControl() {
                             <SanitizedHTML innerHTML={block.innerHTML} />
                             </div>);
                         }
+                        else if ('wp4toastmasters/absences'==block.blockName) {
+                            console.log('absences',data.absences);
+                            return <Absence absences={data.absences} current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
+                        }
                         else
                             return null;
                     }//end signup blocks
@@ -448,6 +445,14 @@ function ModeControl() {
                             </div>
                             )
                         }
+                        else if(showNotes && 'wp4toastmasters/agendaedit' == block.blockName) {
+                            return (
+                                <div key={'block'+blockindex} id={'block'+blockindex} className="block">
+                                <div><strong>{datestring}</strong></div>
+                                <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                                </div>
+                            );
+                        }
                         if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName && (user_can('edit_post') || user_can('organize_agenda')) ) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
@@ -461,6 +466,10 @@ function ModeControl() {
                             <div><strong>{datestring}</strong></div>
                             <SignupNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                             </div>)
+                        }
+                        else if ('wp4toastmasters/absences'==block.blockName) {
+                            console.log('absences',data.absences);
+                            return <Absence absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} makeNotification={makeNotification} />
                         }
                         else
                             return null;

@@ -25,8 +25,9 @@ export default function RoleBlock (props) {
     let role_label = attrs.role;
     
     useEffect( () => {
-        getMemberList();
-    },[post_id]);
+        if('edit' == mode)
+            getMemberList();
+    },[post_id, mode]);
 
     function getMemberList () {
         fetch(wpt_rest.url + 'rsvptm/v1/members_for_role/'+roletagbase+'/'+post_id, {headers: {'X-WP-Nonce': wpt_rest.nonce}})
@@ -114,7 +115,6 @@ export default function RoleBlock (props) {
     </p>
     )        
 
-
     }
 
     if(['reorganize'].includes(mode) && Array.isArray(assignments))
@@ -165,7 +165,7 @@ export default function RoleBlock (props) {
             let id = 'role'+attrs.role+roleindex;
             return (<div id={id} key={id}>
                 <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ console.log('click blockindex '+blockindex+' roleindex '+roleindex); updateAssignment({'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count})}} >Remove</button>}</h3>
-                <>{assignment.ID < 1 && <p><button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></p>}</>
+                <>{assignment.ID == 0 && ('reorganize' != mode) && <p><button className="tmform" onClick={function(event) {/*event.target.disabled = true;*/ updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></p>}</>
             <>{'suggest' == mode && !assignment.ID && <Suggest memberlist={memberlist} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
             <>{'edit' == mode && <SelectControl label="Select Member" value={assignment.ID} options={memberlist} onChange={(id) => { updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
             <>{'suggest' != mode && ('edit' == mode || (current_user_id == assignment.ID)) && (assignment.ID > 0) && (!['reorganize','reorganize'].includes(mode)) && (role.search('Speaker') > -1)  && (role.search('Backup') == -1) && <ProjectChooser attrs={attrs} assignment={assignment} project={assignment.project} title={assignment.title} intro={assignment.intro} manual={assignment.manual} maxtime={assignment.maxtime} display_time={assignment.display_time} updateAssignment={updateAssignment} roleindex={roleindex} blockindex={blockindex} /> }</>
