@@ -13,6 +13,7 @@ import {SignupNote} from './SignupNote.js';
 import {Up, Down, Delete} from './icons.js';
 import {Reorganize} from './Reorganize';
 import {Absence} from './Absence.js';
+import {Hybrid} from './Hybrid.js';
 
 export default function Agenda() {
     let initialPost = 0;
@@ -300,7 +301,6 @@ function makeNotification(message, prompt = false, otherproperties = null) {
         setNotification(null);
     },25000);
     setNotificationTimeout(nt);
-    setUpdated(new Date());
 }
 
 function NextMeetingPrompt() {
@@ -396,9 +396,8 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
+                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} setMode={setMode} setScrollTo={setScrollTo} />
                             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
-                            <p><button onClick={() => {setScrollTo('block'+blockindex);setMode('edit')}}>Edit</button> <button onClick={() => {setScrollTo('block'+blockindex);setMode('suggest')}}>Suggest</button></p>
                             </div>
                             )
                         }    
@@ -407,7 +406,7 @@ function ModeControl() {
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
                                 <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
-                                <p><button onClick={() => {setScrollTo('block'+blockindex);setMode('edit')}}>Edit</button></p>
+                                <p><button className="tmsmallbutton" onClick={() => {setScrollTo('block'+blockindex);setMode('edit')}}>Edit</button></p>
                                 </div>
                             );
                         }
@@ -428,8 +427,10 @@ function ModeControl() {
                             </div>);
                         }
                         else if ('wp4toastmasters/absences'==block.blockName) {
-                            console.log('absences',data.absences);
                             return <Absence absences={data.absences} current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
+                        }
+                        else if ('wp4toastmasters/hybrid'==block.blockName) {
+                            return <Hybrid current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
                         }
                         else
                             return null;
@@ -470,6 +471,9 @@ function ModeControl() {
                         else if ('wp4toastmasters/absences'==block.blockName) {
                             console.log('absences',data.absences);
                             return <Absence absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} makeNotification={makeNotification} />
+                        }
+                        else if ('wp4toastmasters/hybrid'==block.blockName) {
+                            return <Hybrid current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
                         }
                         else
                             return null;

@@ -13,6 +13,7 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 export function Reorganize(props) {
     const {data, mode, multiAssignmentMutation,updateAgenda,ModeControl,post_id,updateAssignment,makeNotification,setRefetchInterval} = props;
+    const [sync,setSync] = useState(true);
     if('reorganize' != mode)
         return null;
     
@@ -156,6 +157,18 @@ function onDragEnd(result) {
         ...draggableStyle
       });
     } 
+
+    function syncToEvaluator(blocksdata,count) {
+        if(!sync)
+            return blocksdata;
+        blocksdata.forEach((block,blockindex) => {
+            if('Evaluator' == block.attrs.role) {
+                blocksdata[blockindex].attrs.count = count;
+                blocksdata[blockindex].attrs.time_allowed = count * 3;    
+            }
+        } );
+        return blocksdata;
+    }
     
     const blockclass = "block reorgblock";
     let label;
@@ -210,7 +223,7 @@ function onDragEnd(result) {
                       )}
                     >
                     <div><strong>{datestring}</strong></div>
-                    <h2>{blockindex} - {block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')} {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
+                    <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')}: {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
                     </div>
                   ) } }
                 </Draggable>
@@ -218,8 +231,19 @@ function onDragEnd(result) {
                 {'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/editing-agendas-and-agenda-templates-with-the-front-end-organize-screen/">Editing agendas and agenda templates with the front-end Organize screen</a> for video and written instructions.</p>}
                 {'wp4toastmasters/role' == block.blockName && (<div>
                   <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
-                    <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberControl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; updateAgenda.mutate(data);}} /></div>}</div>
-                    {('Speaker' == block.attrs.role) && <p><em>Padding time is a little extra time for switching between and introducing speakers (not included in the time allowed for speeches).</em></p>}
+                    <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberControl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; updateAgenda.mutate(data);}} /></div>}</div>
+                    {('Speaker' == block.attrs.role) && 
+                    (<div>
+                    <p><em>Padding time is a little extra time for switching between and introducing speakers (not included in the time allowed for speeches).</em></p>
+                    <p><ToggleControl label="Sync Number of Speakers and Evaluators"
+                    help={
+                        (true == sync)
+                            ? 'Number of evaluators will automatically changed with number of speakers'
+                            : 'Let me manage this manually'
+                    }
+                    checked={ sync }
+                    onChange={ () => {setSync(!sync);}} /></p>
+                    </div>)}
             <p><ToggleControl label="Backup"
             help={
                 (true == block.attrs.backup)

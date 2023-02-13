@@ -286,7 +286,6 @@ function makeNotification(message, prompt = false, otherproperties = null) {
         setNotification(null);
     },25000);
     setNotificationTimeout(nt);
-    setUpdated(new Date());
 }
 
 function NextMeetingPrompt() {

@@ -103,6 +103,6 @@ export function Absence(props) {
     return <p>{ab.name} {(ab.until != '') && <em>until {ab.until}</em>}</p>
     } ) }
     {(absentIndex < 0) && <SelectControl label="One meeting or several?" options={upcoming} value={until} onChange={setUntil} />}
-    <p>{(absentIndex > -1) && <button className="tmform" onClick={() => {removeAbsence(current_user_id,absentIndex)} }>Remove Me</button>} {(absentIndex < 0) && <button  className="tmform" onClick={() => {addAbsence(current_user_id)} }>Add Me {current_user_id}</button>}</p>
+    <p>{(absentIndex > -1) && <button className="tmform" onClick={() => {removeAbsence(current_user_id,absentIndex)} }>Remove Me</button>} {(absentIndex < 0) && <button  className="tmform" onClick={() => {addAbsence(current_user_id)} }>Add Me</button>}</p>
     </div>);
 }
