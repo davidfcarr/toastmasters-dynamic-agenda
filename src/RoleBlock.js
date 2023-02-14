@@ -80,9 +80,9 @@ export default function RoleBlock (props) {
             let removed = [];
             assignments.forEach((prevassignment,previndex) => {
                 prevassignment.role = attrs.role;
-                if(prevassignment.ID) {
+                if((prevassignment.ID != 0) && (prevassignment.ID != "0")) {
                     newassignments.push(prevassignment);
-                    console.log('adding',prevassignment);
+                    console.log('remove blanks adding',prevassignment);
                 }
                 else {
                     removed.push(prevassignment);
@@ -102,6 +102,24 @@ export default function RoleBlock (props) {
 
     function MoveButtons(props) {
     const {assignments, roleindex, filledslots, openslots, attrs, shownumber} = props;
+    let showclose = false;
+    //console.log(attrs.role+' movebuttons filledslots ',filledslots);
+    //console.log(attrs.role+' movebuttons filledslots ',openslots);
+    if(filledslots.length > 0 && openslots.length > 0)
+        {
+            if(filledslots[filledslots.length-1] > openslots[0])
+                {
+                    showclose = true;
+                    console.log(attrs.role+' movebuttons closebutton yes lastfilled',filledslots[filledslots.length-1]);
+                    console.log(attrs.role+' movebuttons closebutton yes firstopen',openslots[0]);
+                }
+                else
+                {
+                    console.log('movebuttons closebutton NO lastfilled',filledslots[filledslots.length-1]);
+                    console.log('movebuttons closebutton NO firstopen',openslots[0]);
+                }
+
+        }
     return(
     <p><span className="moveup">{assignments.length > 1 && roleindex > 0 && <>
     <button  className="tmform" onClick={() => {moveItem(roleindex,0)}}>
@@ -113,7 +131,7 @@ export default function RoleBlock (props) {
     <button className="tmform" onClick={() => {moveItem(roleindex, roleindex+1)}}>
     <Down type={attrs.role+' '+shownumber} />
     </button>}</span>
-    <span className="closegaps">{filledslots.length > 0 && openslots.length > 0 && (filledslots[filledslots.length-1] > openslots[0]) && <button className="tmform" onClick={removeBlanks}><Close /></button>}</span>
+    <span className="closegaps">{showclose && <button className="tmform" onClick={removeBlanks}><Close /></button>}</span>
     </p>
     )        
 
@@ -123,7 +141,7 @@ export default function RoleBlock (props) {
         return (
         <>
         {assignments.map( (assignment, roleindex) => {
-            if(assignment.ID)
+            if((assignment.ID != 0) && (assignment.ID != "0"))
                 filledslots.push(roleindex);
             else
                 openslots.push(roleindex);
@@ -151,10 +169,10 @@ export default function RoleBlock (props) {
     return (
         <>
         {assignments.map( (assignment, roleindex) => {
-            if(assignment.ID)
-                filledslots.push(roleindex);
-            else
+            if(("0" == assignment.ID) || (0 == assignment.ID))
                 openslots.push(roleindex);
+            else
+                filledslots.push(roleindex);
             let shownumber = ((attrs.count && (attrs.count > 1)) || (start > 1)) ? '#'+(roleindex+start) : '';
             if(roleindex == count) {
                 role_label = 'Backup '+role;
@@ -173,8 +191,10 @@ export default function RoleBlock (props) {
             <>{'edit' == mode && assignment.ID == 0 && <div className="tmflexrow"><div className="tmflex30"><TextControl label="Or Add Guest" value={guests[roleindex]} onChange={ (id) => { let newguests = [...guests]; newguests[roleindex] = id; setGuests(newguests); } } /></div><div className="tmflex30"><br /><button className="tmform" onClick={() => { updateAssignment({'ID':guests[roleindex],'name':guests[roleindex] + ' (guest)','role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count}); let newguests = [...guests]; newguests[roleindex] = ''; setGuests(newguests);} } >Add</button></div></div>}</>
             <>{'suggest' != mode && ('edit' == mode || (current_user_id == assignment.ID)) && (assignment.ID > 0) && (!['reorganize','reorganize'].includes(mode)) && (role.search('Speaker') > -1)  && (role.search('Backup') == -1) && <ProjectChooser attrs={attrs} assignment={assignment} project={assignment.project} title={assignment.title} intro={assignment.intro} manual={assignment.manual} maxtime={assignment.maxtime} display_time={assignment.display_time} updateAssignment={updateAssignment} roleindex={roleindex} blockindex={blockindex} /> }</>
 
-            <>{!!('edit' == mode) && assignments.length > 1 &&             <MoveButtons assignments={assignments} roleindex={roleindex} filledslots={filledslots} openslots={openslots} attrs={attrs} shownumber={shownumber} />}</>
+            <>{!!('edit' == mode) && assignments.length > 1 && <MoveButtons assignments={assignments} roleindex={roleindex} filledslots={filledslots} openslots={openslots} attrs={attrs} shownumber={shownumber} />}</>
             {('signup' == mode) && <p><button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button> {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</p>}
+            {'Evaluator' == attrs.role && console.log('evaluator filled '+mode,filledslots)}
+            {'Evaluator' == attrs.role && console.log('evaluator open '+mode,openslots)}
 
             </div>)
         } )}

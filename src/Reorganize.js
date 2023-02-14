@@ -133,7 +133,16 @@ function onDragEnd(result) {
     const raw = ['core/image','core/paragraph','core/heading','wp4toastmasters/signupnote']
     let date = new Date(data.datetime);
     const dateoptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    let datestring = '';
+    const localedate = date.toLocaleDateString('en-US',dateoptions);
+    data.blocksdata.map((block, blockindex) => {
+        data.blocksdata[blockindex].datestring = date.toLocaleTimeString('en-US',{'hour': "2-digit", 'minute': "2-digit",'hour12':true});
+        if(block?.attrs?.time_allowed) {
+            date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
+            if(block.attrs.padding_time)
+                date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.padding_time) * 60000) );
+            data.blocksdata[blockindex].datestring = data.blocksdata[blockindex].datestring.concat( ' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true}) );
+        }});
+
     const moveableBlocks = getMoveAbleBlocks ();
 
     const getListStyle = isDraggingOver => ({
@@ -177,7 +186,7 @@ function onDragEnd(result) {
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
-            <h4>{date.toLocaleDateString('en-US',dateoptions)}  {data.is_template && <span>(Template)</span>}</h4>
+            <h4>{localedate} {data.is_template && <span>(Template)</span>} </h4>
             <ModeControl />
             <Droppable droppableId="droppable">
             {
@@ -188,15 +197,6 @@ function onDragEnd(result) {
                 style={getListStyle(snapshot.isDraggingOver)}  
                 >
             {data.blocksdata.map((block, blockindex) => {
-                datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
-                if(block?.attrs?.time_allowed) {
-                    console.log(block.blockName+' role '+block?.attrs?.role+' blocktime'+date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true}));
-                    console.log('blocktime add '+block.attrs.time_allowed+' minutes');
-                    date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
-                    if(block.attrs.padding_time)
-                        date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.padding_time) * 60000) );
-                    datestring = datestring+' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
-                }
                 if(!block.blockName)
                     return null;
                 else {
@@ -222,7 +222,7 @@ function onDragEnd(result) {
                         provided.draggableProps.style
                       )}
                     >
-                    <div><strong>{datestring}</strong></div>
+                    <div><strong>{block.datestring}</strong></div>
                     <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')}: {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
                     </div>
                   ) } }
