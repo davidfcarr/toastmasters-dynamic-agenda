@@ -28,7 +28,7 @@ export default function Agenda() {
     const [current_user_id,setCurrentUserId] = useState(0);
     const [mode, setMode] = useState('signup');
     const [updating, setUpdating] = useState('');
-    const [showNotes, setShowNotes] = useState(true);
+    const [showDetails, setshowDetails] = useState(true);
     const [scrollTo,setScrollTo] = useState('react-agenda');
     const [refetchInterval, setRefetchInterval] = useState(30000);
     const queryClient = useQueryClient();
@@ -320,14 +320,14 @@ function ModeControl() {
     return (
     <div id="fixed-mode-control">
         {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
-        {['signup','edit'].includes(mode) && <div className="showtoggle"><ToggleControl label="Show Notes"
+        {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><ToggleControl label="Show Details"
             help={
-                (true == showNotes)
-                    ? 'Show Notes'
-                    : 'Roles Only'
+                (true == showDetails)
+                    ? 'Notes + Speech Details'
+                    : 'Outline View'
             }
-            checked={ showNotes }
-            onChange={ () => {let newvalue = !showNotes; setShowNotes( newvalue ); }} /></div>}
+            checked={ showDetails }
+            onChange={ () => {let newvalue = !showDetails; setshowDetails( newvalue ); }} /></div>}
         <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> {setScrollTo('react-agenda');setMode(value);}} options={modeoptions}/>
         </div>)
 }
@@ -370,7 +370,7 @@ function ModeControl() {
     }
 
     if('reorganize' == mode)
-        return <Reorganize data={data} mode={mode} multiAssignmentMutation={multiAssignmentMutation} updateAgenda={updateAgenda} ModeControl={ModeControl} post_id={post_id} updateAssignment={updateAssignment} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />
+        return <Reorganize showDetails={showDetails} data={data} mode={mode} multiAssignmentMutation={multiAssignmentMutation} updateAgenda={updateAgenda} ModeControl={ModeControl} post_id={post_id} updateAssignment={updateAssignment} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />
 
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
@@ -393,15 +393,17 @@ function ModeControl() {
                     if('signup' == mode) {
                         if('wp4toastmasters/role' == block.blockName) {
                             Array.isArray(block.assignments) && block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
+                            console.log('role block',block);
+                            console.log('role block member options',block.memberoptions);
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} setMode={setMode} setScrollTo={setScrollTo} />
+                            <RoleBlock showDetails={showDetails} agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} block={block} updateAssignment={updateAssignment} setMode={setMode} setScrollTo={setScrollTo} />
                             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                             </div>
                             )
                         }    
-                        else if(showNotes && 'wp4toastmasters/agendaedit' == block.blockName) {
+                        else if(showDetails && 'wp4toastmasters/agendaedit' == block.blockName) {
                             return (
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
@@ -410,17 +412,17 @@ function ModeControl() {
                                 </div>
                             );
                         }
-                        else if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName) {
+                        else if(showDetails && 'wp4toastmasters/agendanoterich2' == block.blockName) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
                             <SanitizedHTML innerHTML={block.innerHTML} />
                             </div>)
                         }
-                        else if (showNotes && 'wp4toastmasters/context' == block.blockName ) {
+                        else if (showDetails && 'wp4toastmasters/context' == block.blockName ) {
                             return (<>{ block.innerBlocks.map( (ib) => { return <SanitizedHTML innerHTML={ib.innerHTML} /> } ) }</>);
                         }
-                        else if(showNotes && block.innerHTML) {
+                        else if(showDetails && block.innerHTML) {
                             // agenda notes, signup notes and other raw content
                             return (<div key={'block'+blockindex} id={'block'+blockindex} className="block" >
                             <SanitizedHTML innerHTML={block.innerHTML} />
@@ -441,12 +443,12 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
+                            <RoleBlock showDetails={showDetails} agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} block={block} updateAssignment={updateAssignment} />
                             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                             </div>
                             )
                         }
-                        else if(showNotes && 'wp4toastmasters/agendaedit' == block.blockName) {
+                        else if(showDetails && 'wp4toastmasters/agendaedit' == block.blockName) {
                             return (
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
@@ -454,14 +456,14 @@ function ModeControl() {
                                 </div>
                             );
                         }
-                        if(showNotes && 'wp4toastmasters/agendanoterich2' == block.blockName && (user_can('edit_post') || user_can('organize_agenda')) ) {
+                        if(showDetails && 'wp4toastmasters/agendanoterich2' == block.blockName && (user_can('edit_post') || user_can('organize_agenda')) ) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
                             <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                             </div>)
                         }
-                        else if(showNotes && 'wp4toastmasters/signupnote' == block.blockName && (user_can('edit_post') || user_can('organize_agenda'))) {
+                        else if(showDetails && 'wp4toastmasters/signupnote' == block.blockName && (user_can('edit_post') || user_can('organize_agenda'))) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
@@ -484,7 +486,7 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
+                            <RoleBlock showDetails={showDetails} agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} block={block} updateAssignment={updateAssignment} />
                             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                             </div>
                             )

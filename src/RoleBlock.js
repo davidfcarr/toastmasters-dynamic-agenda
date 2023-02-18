@@ -7,14 +7,18 @@ import Suggest from "./Suggest.js";
 import {Up, Down, Top, Close} from './icons.js';
 
 export default function RoleBlock (props) {
-    let {agendadata, mode, blockindex, assignments, attrs, updateAssignment, setMode, setScrollTo, post_id} = props;
+    const {agendadata, mode, showDetails, blockindex, updateAssignment, setMode, setScrollTo, block} = props;
+    console.log('role block props',props);
+    console.log('role block',block);
+    const { assignments, attrs, memberoptions} = block;
+    
+    console.log('role block memberoptions',memberoptions);
     const {current_user_id, current_user_name} = agendadata;
-    const [memberlist,setMemberList] = useState([{'value':0,'label':'Loading ...'}]);
     const [guests,setGuests] = useState([].fill('',0,attrs.count));
 
     if(!attrs.role)
         return null;
-    let roletagbase = '_'+attrs.role.replaceAll(' ','_')+'_';
+    let roletagbase = '_'+attrs.role.replaceAll(/[^A-Za-z]/g,'_')+'_';
     const [viewTop,setViewTop] = useState('');
     let roles = [];
     var start = (attrs.start) ? parseInt(attrs.start) : 1;
@@ -26,21 +30,6 @@ export default function RoleBlock (props) {
     let role = attrs.role;
     let role_label = attrs.role;
     
-    useEffect( () => {
-        if('edit' == mode)
-            getMemberList();
-    },[post_id, mode]);
-
-    function getMemberList () {
-        fetch(wpt_rest.url + 'rsvptm/v1/members_for_role/'+roletagbase+'/'+post_id, {headers: {'X-WP-Nonce': wpt_rest.nonce}})
-        .then((response) => response.json())
-        .then((data) => {
-            console.log('data for '+roletagbase, data);
-            setMemberList(data);
-        });
-        console.log('fetched memberlist', memberlist);
-    }
-
     function scrolltoId(id){
         if(!id)
             return;
@@ -94,8 +83,8 @@ export default function RoleBlock (props) {
     }
 
     function getMemberName(id) {
-        console.log('get member name, memberlist',memberlist);
-        let m = memberlist.find( (item) => {console.log('member item',item); if(item.value == id) return item; } );
+        console.log('get member name, memberoptions',memberoptions);
+        let m = memberoptions.find( (item) => {console.log('member item',item); if(item.value == id) return item; } );
         console.log('member return ',m);
         return m?.value;
     }
@@ -183,13 +172,16 @@ export default function RoleBlock (props) {
                 return null;
             }
             let id = 'role'+attrs.role.replaceAll(/[^A-z]/g,'')+roleindex;
+            if('suggest' == mode && assignment.ID)
+                console.log('suggest assignment ID for '+role_label,assignment.ID);
             return (<div id={id} key={id}>
-                <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { console.log('click blockindex '+blockindex+' roleindex '+roleindex); let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>}</h3>
+            {assignment.ID > 0 && 'Speaker' == attrs.role && <p><a className="evaluation-link" href={assignment.evaluation_link} target="_blank">Evaluation Form</a></p>}
+                <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { console.log('click blockindex '+blockindex+' roleindex '+roleindex); let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>} {}</h3>
                 <>{assignment.ID == 0 && ('signup' == mode) && <p><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></p>}</>
-            <>{'suggest' == mode && !assignment.ID && <Suggest memberlist={memberlist} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
-            <>{'edit' == mode && <SelectControl label="Select Member" value={assignment.ID} options={memberlist} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
+            <>{'suggest' == mode && (assignment.ID == 0) && <Suggest memberoptions={memberoptions} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
+            <>{'edit' == mode && <SelectControl label="Select Member" value={assignment.ID} options={memberoptions} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
             <>{'edit' == mode && assignment.ID == 0 && <div className="tmflexrow"><div className="tmflex30"><TextControl label="Or Add Guest" value={guests[roleindex]} onChange={ (id) => { let newguests = [...guests]; newguests[roleindex] = id; setGuests(newguests); } } /></div><div className="tmflex30"><br /><button className="tmform" onClick={() => { updateAssignment({'ID':guests[roleindex],'name':guests[roleindex] + ' (guest)','role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count}); let newguests = [...guests]; newguests[roleindex] = ''; setGuests(newguests);} } >Add</button></div></div>}</>
-            <>{'suggest' != mode && ('edit' == mode || (current_user_id == assignment.ID)) && (assignment.ID > 0) && (!['reorganize','reorganize'].includes(mode)) && (role.search('Speaker') > -1)  && (role.search('Backup') == -1) && <ProjectChooser attrs={attrs} assignment={assignment} project={assignment.project} title={assignment.title} intro={assignment.intro} manual={assignment.manual} maxtime={assignment.maxtime} display_time={assignment.display_time} updateAssignment={updateAssignment} roleindex={roleindex} blockindex={blockindex} /> }</>
+            <>{'suggest' != mode && ('edit' == mode || (current_user_id == assignment.ID)) && (assignment.ID > 0) && (!['reorganize','reorganize'].includes(mode)) && (role.search('Speaker') > -1)  && (role.search('Backup') == -1) && showDetails && <ProjectChooser attrs={attrs} assignment={assignment} project={assignment.project} title={assignment.title} intro={assignment.intro} manual={assignment.manual} maxtime={assignment.maxtime} display_time={assignment.display_time} updateAssignment={updateAssignment} roleindex={roleindex} blockindex={blockindex} /> }</>
 
             <>{!!('edit' == mode) && assignments.length > 1 && <MoveButtons assignments={assignments} roleindex={roleindex} filledslots={filledslots} openslots={openslots} attrs={attrs} shownumber={shownumber} />}</>
             {('signup' == mode) && <p><button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button> {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</p>}

@@ -55,7 +55,7 @@ function send() {
 
   return (
     <>
-    <SelectControl label="Member to Nominate" value={member} options={props.memberlist} onChange={(id) => { setMember(id); }} />
+    <SelectControl label="Member to Nominate" value={member} options={props.memberoptions} onChange={(id) => { setMember(id); }} />
       <Editor
         onInit={(evt, editor) => editorRef.current = editor}
         initialValue={"I am nominating you for a role!"}

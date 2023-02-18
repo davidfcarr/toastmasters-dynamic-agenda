@@ -12,7 +12,7 @@ import {Up, Down} from './icons.js';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 export function Reorganize(props) {
-    const {data, mode, multiAssignmentMutation,updateAgenda,ModeControl,post_id,updateAssignment,makeNotification,setRefetchInterval} = props;
+    const {data, mode, multiAssignmentMutation,updateAgenda,ModeControl,post_id,updateAssignment,makeNotification,setRefetchInterval, showDetails} = props;
     const [sync,setSync] = useState(true);
     if('reorganize' != mode)
         return null;
@@ -228,9 +228,9 @@ function onDragEnd(result) {
                   ) } }
                 </Draggable>
                 </div>
-                {'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/editing-agendas-and-agenda-templates-with-the-front-end-organize-screen/">Editing agendas and agenda templates with the front-end Organize screen</a> for video and written instructions.</p>}
+                {showDetails && 'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/editing-agendas-and-agenda-templates-with-the-front-end-organize-screen/">Editing agendas and agenda templates with the front-end Organize screen</a> for video and written instructions.</p>}
                 {'wp4toastmasters/role' == block.blockName && (<div>
-                  <RoleBlock agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} attrs={block.attrs} assignments={block.assignments} updateAssignment={updateAssignment} />
+                    {showDetails && <RoleBlock agendadata={data} block={block} apiClient={apiClient} blockindex={blockindex} mode={mode} updateAssignment={updateAssignment} />}
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } updateAgenda.mutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberControl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; updateAgenda.mutate(data);}} /></div>}</div>
                     {('Speaker' == block.attrs.role) && 
                     (<div>
@@ -254,25 +254,35 @@ function onDragEnd(result) {
             onChange={ () => {data.blocksdata[blockindex].attrs.backup = !block.attrs.backup; updateAgenda.mutate(data);}} /></p>
             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                 </div>)}
-                {'wp4toastmasters/agendaedit' == block.blockName && (
+            {showDetails && 'wp4toastmasters/absences' == block.blockName && (<div>
+                <ToggleControl label="Show on Agenda"
+            help={
+                (true == block.attrs.backup)
+                    ? 'Show'
+                    : 'Hide'
+            }
+            checked={ block.attrs.show_on_agenda }
+            onChange={ () => {data.blocksdata[blockindex].attrs.show_on_agenda = !block.attrs.show_on_agenda; updateAgenda.mutate(data);}} />
+            </div>)}
+            {'wp4toastmasters/agendaedit' == block.blockName && (
                     <div>
-                    <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                    {showDetails && <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />}
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>
                     </div>
                 ) }
                 {'wp4toastmasters/agendanoterich2' == block.blockName && (
                     <div>
-                    <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
+                    {showDetails && <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />}
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; updateAgenda.mutate(data); }} /></div></div>
                     </div>
                 ) }
-                {'wp4toastmasters/signupnote' == block.blockName && (
+                {showDetails && 'wp4toastmasters/signupnote' == block.blockName && (
                     <div>
                     <SignupNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
                     </div>
                 ) }
-                {block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
-                {<Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />}
+                {showDetails && block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
+                {showDetails && <Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />}
             </div>
             {snapshot.isDraggingOver && <div className="dropplaceholder">{provided.placeholder}</div>}
             </>

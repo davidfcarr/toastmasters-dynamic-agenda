@@ -23,7 +23,7 @@ export function Inserter(props) {
 //{!unfurl && <p><button className="blockmove insertbutton" onClick={() => {setUnfurl(true); setRefetchInterval(false);/*setInsert('')*/}}><Plus /> Insert</button></p>}
 
     function InsertControl() {
-        return <>{!(insert || deletemode) && <p><button className="blockmove deletebutton" onClick={() => {setDeleteMode(true);setRefetchInterval(false);}}><Delete /> Delete</button></p>} {deletemode && <p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete');setRefetchInterval(15000);}}><Delete /> Confirm Delete</button></p>} {!insert && <div><RadioControl className="radio-inserter radio-mode" selected={insert} label="Insert Below" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'}]}/></div>}</>
+        return <>{!(insert || deletemode) && <p><button className="blockmove deletebutton" onClick={() => {setDeleteMode(true);setRefetchInterval(false);}}><Delete /> Delete</button></p>} {deletemode && <p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete');setRefetchInterval(15000);}}><Delete /> Confirm Delete</button></p>} {!insert && <div><RadioControl className="radio-inserter radio-mode" selected={insert} label="Insert Below" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'},{'label': 'Track Absences', 'value':'wp4toastmasters/absences'}]}/></div>}</>
     }
     
     function fetchRoles() {
@@ -80,6 +80,12 @@ export function Inserter(props) {
         else if ('wp4toastmasters/signupnote' == value)
         {
             insertBlock(blockindex,{'uid':'note'+Date.now()},value,'<p class="wp-block-wp4toastmasters-signupnote">new signup form note</p>')
+            value = '';
+            setUnfurl(false);
+        }
+        else if ('wp4toastmasters/absences' == value)
+        {
+            insertBlock(blockindex,{'show_on_agenda':'1'},value)
             value = '';
             setUnfurl(false);
         }
