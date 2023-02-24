@@ -4,7 +4,7 @@ import {useQuery,useMutation, useQueryClient} from 'react-query';
 import apiClient from './http-common.js';
 
 export function Absence(props) {
-    const {current_user_id, post_id, mode, makeNotification} = props;
+    const {current_user_id, post_id, mode} = props;
     const [addtolist,setAddToList] = useState(0);
     const [until,setUntil] = useState('');
 

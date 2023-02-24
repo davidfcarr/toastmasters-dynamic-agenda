@@ -1,19 +1,17 @@
 import React, {useState, useEffect, useRef} from "react"
-import apiClient from './http-common.js';
-import {useQuery,useMutation, useQueryClient} from 'react-query';
 import { SelectControl, ToggleControl, RadioControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
-import {Inserter} from "./Inserter.js";
+import {EvaluationTool} from "./EvaluationTool.js";
 import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
 import {SignupNote} from './SignupNote.js';
-import {Up, Down, Delete} from './icons.js';
 import {Reorganize} from './Reorganize';
 import {Absence} from './Absence.js';
 import {Hybrid} from './Hybrid.js';
+import {useBlocks} from './queries.js';
 
 export default function Agenda() {
     let initialPost = 0;
@@ -27,17 +25,31 @@ export default function Agenda() {
     const [post_id, setPostId] = useState(initialPost);
     const [current_user_id,setCurrentUserId] = useState(0);
     const [mode, setMode] = useState('signup');
-    const [updating, setUpdating] = useState('');
     const [showDetails, setshowDetails] = useState(true);
     const [scrollTo,setScrollTo] = useState('react-agenda');
-    const [refetchInterval, setRefetchInterval] = useState(30000);
-    const queryClient = useQueryClient();
-    const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} =
-    useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: refetchInterval });
-    function fetchBlockData() {
-        return apiClient.get('blocks_data/'+post_id);
-    }
+    const [notification,setNotification] = useState(null);
+    const [notificationTimeout,setNotificationTimeout] = useState(null);
+    const [evaluate,setEvaluate] = useState({'ID':'','name':'','project':'','manual':'','title':''});
 
+    function makeNotification(message, prompt = false, otherproperties = null) {
+        if(notificationTimeout)
+            clearTimeout(notificationTimeout);
+        setNotification({'message':message,'prompt':prompt,'otherproperties':otherproperties});
+        let nt = setTimeout(() => {
+            setNotification(null);
+        },25000);
+        setNotificationTimeout(nt);
+    }
+    
+    function NextMeetingPrompt() {
+        let pid = data.upcoming.findIndex((item) => item.value == post_id);
+        if(data.upcoming[pid +1])
+            return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink+'?newsignup'}>Next meeting?</a></div>
+        else
+            return null;
+    }
+    
+    const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} = useBlocks(post_id);
     useEffect(() => {scrolltoId(scrollTo); if('react-agenda' != scrollTo) setScrollTo('react-agenda'); },[mode])
     
     if(axiosdata) {
@@ -68,258 +80,13 @@ export default function Agenda() {
         access.scrollIntoView({behavior: 'smooth'}, true);
     }
 
-    //start from the top
-    
-    const assignmentMutation = useMutation(
-            async (assignment) => { return await apiClient.post("json_assignment_post", assignment)},
-            {
-                onMutate: async (assignment) => {
-                    await queryClient.cancelQueries(['blocks-data',post_id]);
-                    const previousData = queryClient.getQueryData(['blocks-data',post_id]);
-                    queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                        //function passed to setQueryData
-                        const {blockindex,roleindex} = assignment;
-                        const {data} = oldQueryData;
-                        const {blocksdata} = data;
-                        blocksdata[blockindex].assignments[roleindex] = assignment;
-                        console.log('new assignments for block',blocksdata[blockindex].assignments);
-                        const newdata = {
-                            ...oldQueryData, data: {...data,blocksdata: blocksdata}
-                        };
-                        //console.log('modified query to return',newdata);
-                        return newdata;
-                    }) 
-                    makeNotification('Updating ...');
-                    return {previousData}
-                },
-                onSettled: (data, error, variables, context) => {
-                    console.log('onsettled variables', variables);
-                    queryClient.invalidateQueries(['blocks-data',post_id]);
-                    makeNotification('Updated assignment: '+variables.role,true);
-                },
-                onError: (err, variables, context) => {
-                    console.log('mutate assignment error',err);
-                    queryClient.setQueryData("blocks-data", context.previousData);
-                },
-            }
-    );
-
-    const multiAssignmentMutation = useMutation(
-        async (multi) => { return await apiClient.post("json_multi_assignment_post", multi)},
-        {
-            onMutate: async (multi) => {
-                await queryClient.cancelQueries(['blocks-data',post_id]);
-                const previousValue = queryClient.getQueryData(['blocks-data',post_id]);
-                queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                    //function passed to setQueryData
-                    const {blockindex} = multi;
-                    const {data} = oldQueryData;
-                    const {blocksdata} = data;
-                    blocksdata[blockindex].assignments = multi.assignments;
-                    console.log('new block',blocksdata[blockindex]);
-                    const newdata = {
-                        ...oldQueryData, data: {...data,blocksdata: blocksdata}
-                    };
-                    console.log('modified query to return',newdata);
-                    return newdata;
-                }) 
-                makeNotification('Updating ...');
-                return {previousValue}
-            },
-            onSettled: (data, error, variables, context) => {
-                console.log('onsettled variables', variables);
-                queryClient.invalidateQueries(['blocks-data',post_id]);
-                makeNotification('Updated');
-            },
-            onError: (err, variables, context) => {
-                console.log('mutate assignment error');
-                console.log(err);
-                queryClient.setQueryData("blocks-data", context.previousValue);
-              },
-            } );
-    
-    async function updateAgendaPost (agenda) {
-        return await apiClient.post('update_agenda', agenda);
-    }
-
-    const updateAgenda = useMutation(updateAgendaPost, {
-        onMutate: async (agenda) => {
-            await queryClient.cancelQueries(['blocks-data',post_id]);
-            const previousValue = queryClient.getQueryData(['blocks-data',post_id]);
-            queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
-                //function passed to setQueryData
-                const {data} = oldQueryData;
-                const newdata = {
-                    ...oldQueryData, data: {...data,blocksdata: agenda.blocksdata}
-                };
-                console.log('modified query to return',newdata);
-                return newdata;
-            }) 
-            makeNotification('Updating ...');
-            if(Inserter.setInsert)
-                Inserter.setInsert('');
-            return {previousValue}
-        },
-        onSettled: (data, error, variables, context) => {
-            console.log('onsettled variables', variables);
-            queryClient.invalidateQueries(['blocks-data',post_id]);
-            makeNotification('Updated');
-        },
-        onError: (err, variables, context) => {
-            console.log('mutate assignment error');
-            console.log(err);
-            queryClient.setQueryData("blocks-data", context.previousValue);
-          },
-    
-          }
-    )
-
-    function onSuccess(e) {
-        if(e.current_user_id) {
-            setCurrentUserId(e.current_user_id);
-            setPostId(e.post_id);
-            console.log('user id on init '+e.post_id);
-        }
-        setUpdating('');
-        console.log('donloaded data',e);
-    }
-    function onError(e) {
-        console.log('error downloading data',e);
-    }
-
-    function getMoveAbleBlocks () {
-        let moveableBlocks = [];
-        data.blocksdata.map((block, blockindex) => {
-            if(('wp4toastmasters/role' == block.blockName) || ('wp4toastmasters/agendanoterich2' == block.blockName) || ('wp4toastmasters/agendaedit' == block.blockName))
-                moveableBlocks.push(blockindex);
-            } )
-        return moveableBlocks;
-    }
-
-    function moveBlock(blockindex, direction = 'up') {
-        let moveableBlocks = getMoveAbleBlocks();
-        console.log('moveable',moveableBlocks);
-        let newposition = moveableBlocks[0];//move to top
-        let foundindex = moveableBlocks.indexOf(blockindex);
-        console.log('reorg found index '+foundindex+' for blockindex' + blockindex)
-        if(direction == 'up')
-            newposition = moveableBlocks[foundindex - 1];
-        else if(direction == 'down')
-            newposition = moveableBlocks[foundindex + 2];
-        if(direction == 'delete') {
-            console.log('delete from '+blockindex);
-            data.blocksdata.splice(blockindex,2);
-        }
-        else {
-            console.log('reorg new position:'+newposition+' from '+blockindex);
-            console.log('reorg move blocks, current blocks',data.blocksdata);
-            let currentblock = data.blocksdata[blockindex];
-            data.blocksdata[blockindex] = {'blockName':null};
-            data.blocksdata.splice(newposition,0,currentblock);
-            console.log('reorg move '+blockindex+' to '+newposition);
-        }
-        console.log('reorg move blocks, new blocks',data.blocksdata);
-        
-        data.changed = 'blocks';
-        updateAgenda.mutate(data);
-    }
-
-    function MoveButtons(props) {
-        const {blockindex, role} = props;
-        return (
-            <div className="movebuttons">
-            <p>{!!(blockindex > moveableBlocks[0]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }><Up /> Move {role && role+' Role '}Up</button>} {(blockindex < moveableBlocks[moveableBlocks.length -1]) && <button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }><Down /> Move {role && role+' Role '}Down</button>}</p>
-            <div><Inserter blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} makeNotification={makeNotification} /> </div>
-            </div>
-        );
-    }
-
-    function insertBlock(blockindex, attributes={}, blockname = 'wp4toastmasters/role',innerHTML='', edithtml='') {
-        let newblocks = [];
-        data.blocksdata.forEach(
-            (block, index) => {
-                newblocks.push(block);
-                if(index == blockindex) {
-                    console.log('newblock',{'blockName': blockname, 'DnDid':'temp'.Date.now(), 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
-                    newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
-                }
-            }
-        );
-        data.blocksdata = newblocks;
-        updateAgenda.mutate(data);
-        
-    }
-
-    function replaceBlock(blockindex, newblock) {
-        let newblocks = [];
-        data.blocksdata.forEach(
-            (block, index) => {
-                
-                if(index == blockindex) {
-                    newblocks.push(newblock);
-                }
-                else {
-                    newblocks.push(block);
-                }
-            }
-        );
-        data.blocksdata = newblocks;
-        updateAgenda.mutate(data);
-    }
-
-    function updateAttrs (newattrs, blockindex) {
-        data.blocksdata[blockindex].attrs = newattrs;
-        data.changed = 'attrs';
-        updateAgenda.mutate(data);
-    }
-
-    function updateAssignment (assignment, blockindex = null, start=1, count=1) {
-        setUpdating('Updating ...');
-        //embed index properties if passed to the function separately
-        console.log('assignment received by updateAssignment', assignment);
-
-        if(Array.isArray(assignment))
-            {
-            assignment = assignment.map((a) => { return {...a, post_id:post_id,count:count} });
-            return multiAssignmentMutation.mutate({'assignments':assignment,'blockindex':blockindex,'start':1});// todo start won't always be 1!
-            }
-        else {
-        assignment.post_id = post_id;
-        console.log('assignment for mutation',assignment);
-        console.log('assign '+assignment.role+':'+assignment.roleindex+' to '+assignment.ID+' '+assignment.name);
-        assignmentMutation.mutate(assignment);
-        }
-}
-
-const [notification,setNotification] = useState(null);
-const [notificationTimeout,setNotificationTimeout] = useState(null);
-function makeNotification(message, prompt = false, otherproperties = null) {
-    if(notificationTimeout)
-        clearTimeout(notificationTimeout);
-    setNotification({'message':message,'prompt':prompt,'otherproperties':otherproperties});
-    let nt = setTimeout(() => {
-        setNotification(null);
-    },25000);
-    setNotificationTimeout(nt);
-}
-
-function NextMeetingPrompt() {
-    let pid = data.upcoming.findIndex((item) => item.value == post_id);
-    if(data.upcoming[pid +1])
-        return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink+'?newsignup'}>Next meeting?</a></div>
-    else
-        return null;
-}
-        //(notification.findIndex(() => 'Assignment updated') > -1)
-
 function ModeControl() {
-    const modeoptions = (user_can('edit_post') || user_can('organize_agenda')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'}];
+    const modeoptions = (user_can('edit_post') || user_can('organize_agenda')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
     if(user_can('edit_post'))
         modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
-
     return (
     <div id="fixed-mode-control">
-        {notification && <div className="tm-notification tm-notification-success suggestion-notification">{updating} <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
+        {notification && <div className="tm-notification tm-notification-success suggestion-notification"> <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
         {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><ToggleControl label="Show Details"
             help={
                 (true == showDetails)
@@ -328,7 +95,7 @@ function ModeControl() {
             }
             checked={ showDetails }
             onChange={ () => {let newvalue = !showDetails; setshowDetails( newvalue ); }} /></div>}
-        <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> {setScrollTo('react-agenda');setMode(value);}} options={modeoptions}/>
+        <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> { setScrollTo('react-agenda');setMode(value); }  } options={modeoptions}/>
         </div>)
 }
     function user_can(permission) {
@@ -357,26 +124,36 @@ function ModeControl() {
 
 
     console.log('data for agenda return', data);
-    const moveableBlocks = getMoveAbleBlocks ();
 
     if('settings' == mode)
     {
         return(
             <div className="agendawrapper">
             <ModeControl />
-            <TemplateAndSettings setPostId={setPostId} user_can={user_can} data={data} makeNotification={makeNotification} />
+            <TemplateAndSettings makeNotification={makeNotification} setPostId={setPostId} user_can={user_can} data={data} />
             </div>
         );
     }
 
+    if('evaluation' == mode)
+    {
+        return(
+            <div className="agendawrapper">
+            <ModeControl />
+            <EvaluationTool scrolltoId={scrolltoId} makeNotification={makeNotification} data={data} evaluate={evaluate} setEvaluate={setEvaluate} />
+            </div>
+        );
+    }
+
+
     if('reorganize' == mode)
-        return <Reorganize showDetails={showDetails} data={data} mode={mode} multiAssignmentMutation={multiAssignmentMutation} updateAgenda={updateAgenda} ModeControl={ModeControl} post_id={post_id} updateAssignment={updateAssignment} makeNotification={makeNotification} setRefetchInterval={setRefetchInterval} />
+        return <Reorganize makeNotification={makeNotification} showDetails={showDetails} setshowDetails={setshowDetails} data={data} mode={mode} ModeControl={ModeControl} post_id={post_id}  />
 
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{date.toLocaleDateString('en-US',dateoptions)} {data.is_template && <span>(Template)</span>}</h4>
-            <ModeControl />
+            <ModeControl makeNotification={makeNotification} />
             {!Array.isArray(data.blocksdata) && <p>Error loading agenda blocks array.</p>}
             {Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
                 datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
@@ -398,8 +175,8 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock showDetails={showDetails} agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} block={block} updateAssignment={updateAssignment} setMode={setMode} setScrollTo={setScrollTo} />
-                            <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                            <RoleBlock  makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} />
+                            <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
                             </div>
                             )
                         }    
@@ -407,7 +184,7 @@ function ModeControl() {
                             return (
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
-                                <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                                <EditableNote  makeNotification={makeNotification} mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} />
                                 <p><button className="tmsmallbutton" onClick={() => {setScrollTo('block'+blockindex);setMode('edit')}}>Edit</button></p>
                                 </div>
                             );
@@ -429,10 +206,10 @@ function ModeControl() {
                             </div>);
                         }
                         else if ('wp4toastmasters/absences'==block.blockName) {
-                            return <Absence absences={data.absences} current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
+                            return <Absence  makeNotification={makeNotification} absences={data.absences} current_user_id={current_user_id} post_id={post_id} mode={mode} />
                         }
                         else if ('wp4toastmasters/hybrid'==block.blockName) {
-                            return <Hybrid current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
+                            return <Hybrid makeNotification={makeNotification} current_user_id={current_user_id} post_id={post_id} mode={mode} />
                         }
                         else
                             return null;
@@ -443,8 +220,8 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock showDetails={showDetails} agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} block={block} updateAssignment={updateAssignment} />
-                            <SpeakerTimeCount block={block} makeNotification={makeNotification} />
+                            <RoleBlock  makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block} setEvaluate={setEvaluate} />
+                            <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
                             </div>
                             )
                         }
@@ -452,7 +229,7 @@ function ModeControl() {
                             return (
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                                 <div><strong>{datestring}</strong></div>
-                                <EditableNote mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} makeNotification={makeNotification} />
+                                <EditableNote  makeNotification={makeNotification} mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} />
                                 </div>
                             );
                         }
@@ -460,22 +237,22 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <EditorAgendaNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
+                            <EditorAgendaNote  makeNotification={makeNotification} blockindex={blockindex} block={block} />
                             </div>)
                         }
                         else if(showDetails && 'wp4toastmasters/signupnote' == block.blockName && (user_can('edit_post') || user_can('organize_agenda'))) {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <SignupNote blockindex={blockindex} block={block} replaceBlock={replaceBlock} />
+                            <SignupNote blockindex={blockindex} block={block}  />
                             </div>)
                         }
                         else if ('wp4toastmasters/absences'==block.blockName) {
                             console.log('absences',data.absences);
-                            return <Absence absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} makeNotification={makeNotification} />
+                            return <Absence  makeNotification={makeNotification} absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} />
                         }
                         else if ('wp4toastmasters/hybrid'==block.blockName) {
-                            return <Hybrid current_user_id={current_user_id} post_id={post_id} mode={mode} makeNotification={makeNotification} />
+                            return <Hybrid makeNotification={makeNotification} current_user_id={current_user_id} post_id={post_id} mode={mode} />
                         }
                         else
                             return null;
@@ -486,7 +263,7 @@ function ModeControl() {
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock showDetails={showDetails} agendadata={data} post_id={post_id} apiClient={apiClient} blockindex={blockindex} mode={mode} block={block} updateAssignment={updateAssignment} />
+                            <RoleBlock  makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block}  />
                             <SpeakerTimeCount block={block} makeNotification={makeNotification} />
                             </div>
                             )

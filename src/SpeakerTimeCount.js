@@ -1,7 +1,7 @@
 import React, {useState} from "react"
 
 export function SpeakerTimeCount(props) {
-const {attrs, assignments} = props.block;
+const {attrs, assignments, makeNotification} = props.block;
 const [warningGiven,setWarningGiven] = useState(false);
 if(attrs.role != 'Speaker')
     return null;
@@ -18,8 +18,10 @@ if(!totaltime)
     return null;
 
 function delayedNotification (message) {
+    if(!makeNotification)
+        return;
     setTimeout(() => {
-        props.makeNotification(message);
+        makeNotification(message);
     },1000);
     setWarningGiven(true);
 }

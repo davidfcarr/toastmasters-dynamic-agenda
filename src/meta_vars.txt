@@ -1,0 +1,256 @@
+	"editor_base_url"
+	"_rsvp_form"
+	"_meet_recur"
+	"form_type"
+	"_rsvp_dates"
+	"_rsvp_end_date"
+	"_firsttime"
+	"_rsvp_on"
+	"_rsvp_to"
+	"_rsvp_confirm"
+	"confirmation_excerpt"
+	"confirmation_customize"
+	"reminders"
+	"form_customize"
+	"_rsvp_instructions"
+	"_rsvp_rsvpmaker_send_confirmation_email"
+	"form_links": [
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		}
+	],
+	"confirmation_links": [
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "edit-rsvpmaker-options"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu"
+			}
+		}
+	],
+	"related_document_links": [
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "edit-rsvpmaker-options"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "confirmation_reminders"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "edit-rsvpmaker-options"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"parent"
+			"id"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmenu-custom"
+			}
+		},
+		{
+			"id"
+			"parent"
+			"title"
+			"href"
+			"meta": {
+				"class": "rsvpmaker-create-update"
+			}
+		}
+	],
+	"changes"
+	"_rsvp_confirmation_include_event"
+	"_sked_Varies"
+	"_sked_First"
+	"_sked_Second"
+	"_sked_Third"
+	"_sked_Fourth"
+	"_sked_Last"
+	"_sked_Every"
+	"_sked_Sunday"
+	"_sked_Monday"
+	"_sked_Tuesday"
+	"_sked_Wednesday"
+	"_sked_Thursday"
+	"_sked_Friday"
+	"_sked_Saturday"
+	"_sked_hour"
+	"_sked_minutes"
+	"_sked_end"
+	"_rsvp_count"
+	"_rsvp_count_party"
+	"_rsvp_yesno"
+	"_rsvp_max"
+	"_rsvp_login_required"
+	"_rsvp_show_attendees"
+	"_convert_timezone"
+	"_add_timezone"

@@ -4,7 +4,7 @@ import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
 import { Editor } from '@tinymce/tinymce-react';
 import { EditableNote } from './EditableNote.js';
-import {Plus, Delete} from './icons.js';
+import {Delete} from './icons.js';
 
 export function Inserter(props) {
     const [insert,setInsert] = useState(null);
@@ -12,26 +12,24 @@ export function Inserter(props) {
     const [deletemode,setDeleteMode] = useState(false);
     const [att,setAtt] = useState({'uid':''});
     const [rolelist,setRolelist] = useState([]);
-    const {blockindex, insertBlock, moveBlock, post_id, makeNotification, setRefetchInterval} = props;
+    const {blockindex, insertBlock, moveBlock, post_id, data, makeNotification} = props;
     const editorRef = useRef(null);
 
     //https://delta.local/wp-json/rsvptm/v1/roles_list
     const queryClient = useQueryClient();
     
-    const { isLoading, isSuccess, isError, data, error, refetch } =
+    const { isLoading, isSuccess, isError, data:roledata, error, refetch } =
     useQuery('rolelist', fetchRoles, { enabled: true, retry: 2, onSuccess, onError });
-//{!unfurl && <p><button className="blockmove insertbutton" onClick={() => {setUnfurl(true); setRefetchInterval(false);/*setInsert('')*/}}><Plus /> Insert</button></p>}
 
     function InsertControl() {
-        return <>{!(insert || deletemode) && <p><button className="blockmove deletebutton" onClick={() => {setDeleteMode(true);setRefetchInterval(false);}}><Delete /> Delete</button></p>} {deletemode && <p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete');setRefetchInterval(15000);}}><Delete /> Confirm Delete</button></p>} {!insert && <div><RadioControl className="radio-inserter radio-mode" selected={insert} label="Insert Below" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'},{'label': 'Track Absences', 'value':'wp4toastmasters/absences'}]}/></div>}</>
+        return <>{!(insert || deletemode) && <p><button className="blockmove deletebutton" onClick={() => {setDeleteMode(true);}}><Delete /> Delete</button></p>} {deletemode && <p><button className="blockmove" onClick={() => {moveBlock(blockindex, 'delete', data);}}><Delete /> Confirm Delete</button></p>} {!insert && <div><RadioControl className="radio-inserter radio-mode" selected={insert} label="Insert Below" onChange={(value)=> updateInsert(value)} options={[{'label': 'Role', 'value':'wp4toastmasters/role'},{'label': 'Agenda Note', 'value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'},{'label': 'Track Absences', 'value':'wp4toastmasters/absences'}]}/></div>}</>
     }
     
     function fetchRoles() {
         return apiClient.get('roles_list');
     }
     function onSuccess(e) {
-        console.log('retrieved role list');
-        console.log(e);
+        console.log('retrieved role list',e);
         setRolelist(e.data);
     }
     function onError(e) {
@@ -63,7 +61,7 @@ export function Inserter(props) {
     function updateInsert(value) {
         if('wp4toastmasters/role' == value) {
             setAtt({'role':'','count':1,'time_allowed':0,'padding_time':0,'backup':false});
-            setRefetchInterval(false);//don't refetch while using form
+            //don't refetch while using form
         }
         else if('wp4toastmasters/agendaedit' == value)
         {
@@ -181,7 +179,7 @@ export function Inserter(props) {
         return (
             <>
             <InsertControl />
-            <EditableNote post_id={post_id} block={{'attrs':{'editable':'', 'uid':Date.now(), 'time_allowed':0, 'edithtml':''}}} mode='organize' makeNotification={makeNotification} insertBlock={insertBlock} blockindex={blockindex} setInsert={setInsert} />
+            <EditableNote  makeNotification={makeNotification} post_id={post_id} block={{'attrs':{'editable':'', 'uid':Date.now(), 'time_allowed':0, 'edithtml':''}}} mode='organize' insertBlock={insertBlock} blockindex={blockindex} setInsert={setInsert} />
             <p>Entering text is optional and will apply to <em>this specific event.</em> The Editable Note is meant to be used for content that changes from meeting to meeting, such as the meeting theme or word of the day.</p>
            </>
         );    

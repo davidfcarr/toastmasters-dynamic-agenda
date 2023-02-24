@@ -1,16 +1,18 @@
 import React, {useState, useEffect} from "react"
 import { __experimentalNumberControl as NumberControl, SelectControl, ToggleControl, TextControl } from '@wordpress/components';
 //import {RichText} from '@wordpress/components'
-import EditorMCE from './EditorMCE.js'
 import ProjectChooser from "./ProjectChooser.js";
 import Suggest from "./Suggest.js";
 import {Up, Down, Top, Close} from './icons.js';
+import apiClient from './http-common.js';
+import {useMutation, useQueryClient} from 'react-query';
 
 export default function RoleBlock (props) {
-    const {agendadata, mode, showDetails, blockindex, updateAssignment, setMode, setScrollTo, block} = props;
+    const {agendadata, mode, showDetails, blockindex, blocksdata, setMode, setScrollTo, block, makeNotification, post_id, setEvaluate} = props;
     console.log('role block props',props);
     console.log('role block',block);
     const { assignments, attrs, memberoptions} = block;
+    const queryClient = useQueryClient();
     
     console.log('role block memberoptions',memberoptions);
     const {current_user_id, current_user_name} = agendadata;
@@ -29,7 +31,97 @@ export default function RoleBlock (props) {
     let filledslots = [];
     let role = attrs.role;
     let role_label = attrs.role;
+    function updateAssignment (assignment, blockindex = null, start=1, count=1) {
+        //embed index properties if passed to the function separately
+        console.log('assignment received by updateAssignment', assignment);
+
+        if(Array.isArray(assignment))
+            {
+            assignment = assignment.map((a) => { return {...a, post_id:post_id,count:count} });
+            return multiAssignmentMutation.mutate({'assignments':assignment,'blockindex':blockindex,'start':1});// todo start won't always be 1!
+            }
+        else {
+        assignment.post_id = post_id;
+        console.log('assignment for mutation',assignment);
+        console.log('assign '+assignment.role+':'+assignment.roleindex+' to '+assignment.ID+' '+assignment.name);
+        assignmentMutation.mutate(assignment);
+        }
+}
     
+const assignmentMutation = useMutation(
+        async (assignment) => { return await apiClient.post("json_assignment_post", assignment)},
+        {
+            onMutate: async (assignment) => {
+                await queryClient.cancelQueries(['blocks-data',post_id]);
+                const previousData = queryClient.getQueryData(['blocks-data',post_id]);
+                queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
+                    //function passed to setQueryData
+                    const {blockindex,roleindex} = assignment;
+                    const {data} = oldQueryData;
+                    const {blocksdata} = data;
+                    blocksdata[blockindex].assignments[roleindex] = assignment;
+                    console.log('new assignments for block',blocksdata[blockindex].assignments);
+                    const newdata = {
+                        ...oldQueryData, data: {...data,blocksdata: blocksdata}
+                    };
+                    //console.log('modified query to return',newdata);
+                    return newdata;
+                }) 
+                makeNotification('Updating ...');
+                return {previousData}
+            },
+            onSettled: (data, error, variables, context) => {
+                console.log('onsettled variables', variables);
+                queryClient.invalidateQueries(['blocks-data',post_id]);
+                makeNotification('Updated assignment: '+variables.role,true);
+            },
+            onError: (err, variables, context) => {
+                console.log('mutate assignment error',err);
+                queryClient.setQueryData("blocks-data", context.previousData);
+            },
+        }
+);
+
+const multiAssignmentMutation = useMutation(
+    async (multi) => { return await apiClient.post("json_multi_assignment_post", multi)},
+    {
+        onMutate: async (multi) => {
+            await queryClient.cancelQueries(['blocks-data',post_id]);
+            const previousValue = queryClient.getQueryData(['blocks-data',post_id]);
+            queryClient.setQueryData(['blocks-data',post_id],(oldQueryData) => {
+                //function passed to setQueryData
+                const {blockindex} = multi;
+                const {data} = oldQueryData;
+                const {blocksdata} = data;
+                console.log('blockindex from multi oldQueryData',blockindex);
+                console.log('blocksdata from oldQueryData',blocksdata);
+                blocksdata[blockindex].assignments = multi.assignments;
+                console.log('new block',blocksdata[blockindex]);
+                const newdata = {
+                    ...oldQueryData, data: {...data,blocksdata: blocksdata}
+                };
+                console.log('modified query to return',newdata);
+                return newdata;
+            }) 
+            makeNotification('Updating ...');
+            return {previousValue}
+        },
+        onSettled: (data, error, variables, context) => {
+            console.log('onsettled variables', variables);
+            queryClient.invalidateQueries(['blocks-data',post_id]);
+            makeNotification('Updated');
+        },
+        onError: (err, variables, context) => {
+            console.log('mutate assignment error');
+            console.log(err);
+            queryClient.setQueryData("blocks-data", context.previousValue);
+          },
+        } );
+
+async function updateAgendaPost (agenda) {
+    return await apiClient.post('update_agenda', agenda);
+}
+
     function scrolltoId(id){
         if(!id)
             return;
@@ -175,7 +267,7 @@ export default function RoleBlock (props) {
             if('suggest' == mode && assignment.ID)
                 console.log('suggest assignment ID for '+role_label,assignment.ID);
             return (<div id={id} key={id}>
-            {assignment.ID > 0 && 'Speaker' == attrs.role && <p><a className="evaluation-link" href={assignment.evaluation_link} target="_blank">Evaluation Form</a></p>}
+            {assignment.ID > 0 && 'Speaker' == attrs.role && <p><a className="evaluation-link" href="#" onClick={() => {setEvaluate(assignment);setMode('evaluation')}} >Evaluation Form</a></p>}
                 <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { console.log('click blockindex '+blockindex+' roleindex '+roleindex); let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>} {}</h3>
                 <>{assignment.ID == 0 && ('signup' == mode) && <p><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></p>}</>
             <>{'suggest' == mode && (assignment.ID == 0) && <Suggest memberoptions={memberoptions} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>

@@ -41,7 +41,7 @@ export function Hybrid(props) {
                     //console.log('modified query to return',newdata);
                     return newdata;
                 }) 
-                makeNotification('Updating ...');
+                makeNotfication('Updating ...');
                 return {previousData}
             },
             onSettled: (data, error, variables, context) => {

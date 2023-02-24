@@ -4,13 +4,11 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
-
 .wp-block-create-block-toastmasters-dynamic-agenda {
 	background-color: #21759b;
 	color: #fff;
 	padding: 2px;
 }
-
 .next-meeting-prompt {
 	background-color: #fff;
 	color: #7C2128;
@@ -240,4 +238,18 @@ border: thick dotted gray;
 margin-left: -25px;
 margin-right: -25px;
 min-height: 150px;
+}
+.template-schedule, .event-schedule {
+	display: flex;
+}
+.frequency, .days {
+	padding-right: 20px;
+}
+.calendar {
+	width: 250px;
+	padding-right: 20px;
+}
+.evaluation-note {
+	width: 100%;
+	height: 2em;
 }

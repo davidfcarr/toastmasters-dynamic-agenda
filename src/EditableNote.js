@@ -4,6 +4,7 @@ import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
 import {SanitizedHTML} from './SanitizedHTML.js';
 import { __experimentalNumberControl as NumberControl, TextControl } from '@wordpress/components';
+import {initChangeBlockAttribute,updateAgenda} from './queries.js'
 
 export function EditableNote(props) {
     const editorRef = useRef(null);
@@ -12,14 +13,20 @@ export function EditableNote(props) {
     const {post_id, block, mode, makeNotification, insertBlock, blockindex, setInsert} = props;
     const [att,setAtt] = useState(block.attrs);
     const [submitted,setSubmitted] = useState(false);
+
+    const {mutate:agendaMutate} = updateAgenda(post_id, makeNotification);
+    const changeBlockAttribute = initChangeBlockAttribute(post_id,blockindex);
+
     function save() {
       if(insertBlock) {
         setAtt((oldatt) => {return {...oldatt,'uid': Date.now()}});
         insertBlock(blockindex,att,'wp4toastmasters/agendaedit','',editorRef.current.getContent());//no inner html, edithtml
         setInsert('');
       } else {
+        const change = changeBlockAttribute('editable',att.editable);
+        agendaMutate(change);
         const submitnote = {'note':editorRef.current.getContent(),'uid':att.uid,'post_id':props.post_id,'editable':att.editable};
-        editEditable.mutate(submitnote);  
+        editEditable.mutate(submitnote);
       }
   }
 

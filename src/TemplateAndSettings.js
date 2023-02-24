@@ -1,16 +1,28 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
-import {useQuery,useMutation, useQueryClient} from 'react-query';
+import {useMutation, useQueryClient} from 'react-query';
 import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
+import {EventDateTime} from './EventDateTime.js';
+import {TemplateSchedule} from './TemplateSchedule.js';
+import { rsvpMetaData, initRSVPMetaMutate } from "./rsvpmaker-api.js";
 
 export function TemplateAndSettings (props) {
-    const {data, makeNotification, user_can, setPostId} = props;
+    const {data, user_can, setPostId, makeNotification} = props;
     const [allowOrganizeAgenda, setAllowOrganizeAgenda] = useState(data.subscribers_can_organize_agenda);
     const [allowEditSignups, setAllowEditsignups] = useState(data.subscribers_can_edit_signups);
     const [newSignupDefault, setNewSignupDefault] = useState(data.newSignupDefault);
     const [templateToEdit, setTemplateToEdit] = useState(data.is_template ? data.post_id: data.has_template);
-
     const [newtemplate, setNewTemplate] = useState(0);
+
+    const {data:mdata,isLoading:metaIsLoading} = rsvpMetaData(data.post_id);
+    if(metaIsLoading) 
+        console.log('metadata is loading');
+    else {
+        const metadata = mdata.data;
+        console.log('metadata',metadata);
+    }
+    const {mutate:metaMutate} = initRSVPMetaMutate(data.post_id,makeNotification);
+
     let templates = data.upcoming.filter((item) => {if(item.label.indexOf('emplate') > 0) { return true }});
     templates.push({'value':0,'label':'Choose Template'});
 
@@ -100,6 +112,9 @@ const permissionsMutation = useMutation(
             onChange={ () => {let newvalue = !newSignupDefault; setNewSignupDefault( newvalue ); permissionsMutation.mutate({'key':'newSignupDefault','value':newvalue}); }} />
 
         <p><em>You can decide whether in addition to signing up for roles, members are able to edit assignments for others or insert/delete/move roles and content blocks on the agenda.</em></p></div>)}</>
+        {metaIsLoading && <p>Loading event metadata ...</p> }
+        {!metaIsLoading && !data.is_template && mdata && mdata.data && <EventDateTime post_id={data.post_id} metadata={mdata.data} metaMutate={metaMutate} makeNotification={makeNotification} />}
+        {data.is_template && !metaIsLoading && mdata && mdata.data && <TemplateSchedule post_id={data.post_id} metadata={mdata.data} metaMutate={metaMutate} makeNotification={makeNotification} />}
 </div>
     );
 }
