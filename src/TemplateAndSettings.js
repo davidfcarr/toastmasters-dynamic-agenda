@@ -17,6 +17,10 @@ export function TemplateAndSettings (props) {
     const {data:mdata,isLoading:metaIsLoading} = rsvpMetaData(data.post_id);
     if(metaIsLoading) 
         console.log('metadata is loading');
+    else if (!mdata.data) {
+        makeNotification('error loading event metadata');
+        const metadata = null;
+    }
     else {
         const metadata = mdata.data;
         console.log('metadata',metadata);
@@ -41,20 +45,18 @@ export function TemplateAndSettings (props) {
         async (change) => { return await apiClient.post("json_copy_post", change)},
         {
             onSuccess: (data, error, variables, context) => {
-                console.log('template change success',data);
-                console.log('original variables',variables);
                 if(data.data.blockdata)
                 queryClient.setQueryData(['blocks-data',data.data.post_id],(oldQueryData) => {
                     const newdata = {
                         ...oldQueryData, data: data.data
                     };
-                    console.log('optimistic update of template',newdata);
                     return newdata;
                 }) 
                 queryClient.invalidateQueries(['blocks-data',data.data.post_id]);
             },
             onError: (err, variables, context) => {
                 console.log('mutate template error',err);
+                makeNotification('Error '+err.message);
             },
         }
 );
@@ -67,6 +69,7 @@ const permissionsMutation = useMutation(
             makeNotification('Permissions update: '+data.data.status);
         },
         onError: (err, variables, context) => {
+            makeNotification('Error '+err.message);
             console.log('mutate template error',err);
         },
     }
@@ -78,10 +81,10 @@ const permissionsMutation = useMutation(
         <p>Currently editing <em>{currentlyEditing()}</em></p>
         <SelectControl label="Edit Template" value={templateToEdit} options={templates} onChange={(value) => setTemplateToEdit(parseInt(value))} />
         <p><button className="tmform" onClick={() => { makeNotification('Updating ...'); setPostId(templateToEdit);}}>Edit</button></p>
-        <>{data.has_template && <div><p><button className="tmform" onClick={() => { let mymutation = {'copyfrom':data.post_id,'copyto':data.has_template,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); makeNotification('Template '+data.has_template+' updated.',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
+        <>{data.has_template && <div><p><button className="tmform" onClick={() => { let mymutation = {'copyfrom':data.post_id,'copyto':data.has_template,'post_id':data.post_id}; templateMutation.mutate(mymutation); makeNotification('Template '+data.has_template+' updated.',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
         <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+data.post_id}>Create/Update</a> - copy content to new and existing events</p>}</>
         <>{data.has_template && (<><SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
-        <p><button className="tmform" onClick={() => {  makeNotification('Updating ...'); let mymutation = {'copyfrom':newtemplate,'copyto':data.post_id,'post_id':data.post_id}; console.log('mymutation',mymutation); templateMutation.mutate(mymutation); }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
+        <p><button className="tmform" onClick={() => {  makeNotification('Updating ...'); let mymutation = {'copyfrom':newtemplate,'copyto':data.post_id,'post_id':data.post_id}; templateMutation.mutate(mymutation); }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
         </>)}</>
         
         <>{user_can('manage_options') && (
@@ -102,15 +105,7 @@ const permissionsMutation = useMutation(
             }
             checked={ allowOrganizeAgenda }
             onChange={ () => {let newvalue = !allowOrganizeAgenda; setAllowOrganizeAgenda( newvalue ); permissionsMutation.mutate({'key':'organize_agenda','value':newvalue}); }} />
-        <ToggleControl label="Use This Signup Form by Default"
-            help={
-                (true == newSignupDefault)
-                    ? 'Yes'
-                    : 'No'
-            }
-            checked={ newSignupDefault }
-            onChange={ () => {let newvalue = !newSignupDefault; setNewSignupDefault( newvalue ); permissionsMutation.mutate({'key':'newSignupDefault','value':newvalue}); }} />
-
+        
         <p><em>You can decide whether in addition to signing up for roles, members are able to edit assignments for others or insert/delete/move roles and content blocks on the agenda.</em></p></div>)}</>
         {metaIsLoading && <p>Loading event metadata ...</p> }
         {!metaIsLoading && !data.is_template && mdata && mdata.data && <EventDateTime post_id={data.post_id} metadata={mdata.data} metaMutate={metaMutate} makeNotification={makeNotification} />}

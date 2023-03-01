@@ -8,9 +8,7 @@ import {initChangeBlockAttribute,updateAgenda} from './queries.js'
 
 export function EditableNote(props) {
     const editorRef = useRef(null);
-    console.log('EditableNote props');
-    console.log(props);
-    const {post_id, block, mode, makeNotification, insertBlock, blockindex, setInsert} = props;
+    const {post_id, block, makeNotification, insertBlock, blockindex, setInsert} = props;
     const [att,setAtt] = useState(block.attrs);
     const [submitted,setSubmitted] = useState(false);
 
@@ -47,7 +45,6 @@ export function EditableNote(props) {
               const newdata = {
                   ...oldQueryData, data: {...data,blocksdata: blocksdata}
               };
-              //console.log('modified query to return',newdata);
               return newdata;
   }) 
           makeNotification('Updating ...');
@@ -56,15 +53,18 @@ export function EditableNote(props) {
       },
         // On failure, roll back to the previous value
         onError: (err, variables, previousValue) => {
-          console.log('mutate assignment error');
-          console.log(err);
+          makeNotification('Error updating editable note '+err.message);
+          console.log('error updating editable note',err);
           queryClient.setQueryData(['blocks-data',post_id], previousValue);
         },
         // After success or failure, refetch the todos query
-        onSettled: () => {
-          makeNotification('Updated editable note');
-        }
-      }
+        onSettled: (data, error, variables, context) => {
+          queryClient.invalidateQueries(['blocks-data',variables.post_id]);
+      },
+      onSuccess: (data, error, variables, context) => {
+          makeNotification('Updated');
+      },
+    }
   );
 
   if(!submitted && ((['edit','reorganize'].includes(props.mode)) || insertBlock))

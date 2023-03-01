@@ -15,10 +15,8 @@ import { useBlockProps } from '@wordpress/block-editor';
  *
  * @return {WPElement} Element to render.
  */
-export default function save() {
+export default function save({attributes}) {
 	return (
-		<>
-		<div id="react-agenda" { ...useBlockProps.save() }></div>
-		</>
+		<div id="react-agenda" {...attributes} { ...useBlockProps.save() }></div>
 	);
 }

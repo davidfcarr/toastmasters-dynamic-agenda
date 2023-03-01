@@ -42,7 +42,6 @@ export function initRSVPMetaMutate(post_id,makeNotification) {
                 const newdata = {
                     ...oldQueryData, data: changed
                 };
-                console.log('modified query to return',newdata);
                 return newdata;
             }) 
             makeNotification('Updating ...');
@@ -53,8 +52,7 @@ export function initRSVPMetaMutate(post_id,makeNotification) {
             makeNotification('Updated');
         },
         onError: (err, variables, context) => {
-            console.log('mutate rsvpmaker meta error');
-            console.log(err);
+            console.log('mutate rsvpmaker meta error',err);
             queryClient.setQueryData(['rsvp-meta',post_id], context.previousValue);
           },
     

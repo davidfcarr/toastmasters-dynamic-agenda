@@ -14,18 +14,16 @@ export function Hybrid(props) {
         return apiClient.get('hybrid?post_id='+post_id);
     }
     function onSuccess(data) {
-        console.log(data);
+        console.log('hybrid data',data);
     }
     function onError(err, variables, context) {
-        console.log(err);
+        console.log('hybrid error',err);
     }
 
     const hybridMutation = useMutation(
         async (addremove) => { return await apiClient.post("hybrid?post_id="+post_id, addremove)},
         {
             onMutate: async (addremove) => {
-                console.log('addremove',addremove);
-                console.log('addremove api client',apiClient);
                 await queryClient.cancelQueries(['hybrid-data',post_id]);
                 const previousData = queryClient.getQueryData(['blocks-data',post_id]);
                 queryClient.setQueryData(['hybrid-data',post_id],(oldQueryData) => {
@@ -38,18 +36,20 @@ export function Hybrid(props) {
                     const newdata = {
                         ...oldQueryData, data: {...data,hybrid: hybrid}
                     };
-                    //console.log('modified query to return',newdata);
                     return newdata;
                 }) 
                 makeNotfication('Updating ...');
                 return {previousData}
             },
             onSettled: (data, error, variables, context) => {
-                queryClient.invalidateQueries(['hybrid-data',post_id]);
-                makeNotification('Updated hybrid');
+                queryClient.invalidateQueries(['hybrid-data',variables.post_id]);
             },
-            onError: (err, variables, context) => {
-                console.log('mutate assignment error',err);
+            onSuccess: (data, error, variables, context) => {
+                makeNotification('Updated');
+            },
+                onError: (err, variables, context) => {
+                makeNotification('update hybrid error');
+                console.log('mutate hybrid error',err);
                 queryClient.setQueryData("hybrid-data", context.previousData);
             },
         }
@@ -61,11 +61,9 @@ export function Hybrid(props) {
     const {hybrid,memberlist} = data.data; 
 
     function getMemberName(id) {
-        console.log('get member name, memberlist',memberlist);
         if(!Array.isArray(memberlist))
             return 'User '+id;
-        let m = memberlist.find( (item) => {console.log('member item',item); if(item.value == id) return item; } );
-        console.log('member return ',m);
+        let m = memberlist.find( (item) => { if(item.value == id) return item; } );
         return m?.label;
     }
 
@@ -78,6 +76,7 @@ export function Hybrid(props) {
 
     let absentIndex = -1;
     let meuntil = '';
+    if(Array.isArray(hybrid))
     hybrid.forEach((ab, index) => {
         if(ab.ID == current_user_id)
             {

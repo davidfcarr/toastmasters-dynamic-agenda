@@ -9,7 +9,7 @@ const {time_allowed, count} = attrs;
 const time_allowed_text = (time_allowed) ? ' out of '+time_allowed+' allowed': '';
 let totaltime = 0;
 
-assignments.forEach( (assignment, aindex) => {
+Array.isArray(assignments) && assignments.forEach( (assignment, aindex) => {
     if(assignment.ID && (aindex < count))//count time for speakers but not backup speaker
         totaltime += parseInt(assignment.maxtime);
 } );

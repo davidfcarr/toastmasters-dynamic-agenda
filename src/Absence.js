@@ -14,10 +14,10 @@ export function Absence(props) {
         return apiClient.get('absences?post_id='+post_id);
     }
     function onSuccess(data) {
-        console.log(data);
+        console.log('absences',data);
     }
     function onError(err, variables, context) {
-        console.log(err);
+        console.log('absences error',err);
     }
 
     const queryClient = useQueryClient();
@@ -26,8 +26,6 @@ export function Absence(props) {
         async (addremove) => { return await apiClient.post("absences?post_id="+post_id, addremove)},
         {
             onMutate: async (addremove) => {
-                console.log('addremove',addremove);
-                console.log('addremove api client',apiClient);
                 await queryClient.cancelQueries(['absences-data',post_id]);
                 const previousData = queryClient.getQueryData(['blocks-data',post_id]);
                 queryClient.setQueryData(['absences-data',post_id],(oldQueryData) => {
@@ -40,17 +38,19 @@ export function Absence(props) {
                     const newdata = {
                         ...oldQueryData, data: {...data,absences: absences}
                     };
-                    //console.log('modified query to return',newdata);
                     return newdata;
                 }) 
                 makeNotification('Updating ...');
                 return {previousData}
             },
             onSettled: (data, error, variables, context) => {
-                queryClient.invalidateQueries(['absences-data',post_id]);
-                makeNotification('Updated absences');
+                queryClient.invalidateQueries(['absences-data',variables.post_id]);
+            },
+            onSuccess: (data, error, variables, context) => {
+                makeNotification('Updated');
             },
             onError: (err, variables, context) => {
+                makeNotification('Error updating abscences '+err.message);
                 console.log('mutate assignment error',err);
                 queryClient.setQueryData("absences-data", context.previousData);
             },
@@ -58,9 +58,7 @@ export function Absence(props) {
     );
 
     function getMemberName(id) {
-        console.log('get member name, memberlist',memberlist);
-        let m = memberlist.find( (item) => {console.log('member item',item); if(item.value == id) return item; } );
-        console.log('member return ',m);
+        let m = memberlist.find( (item) => { if(item.value == id) return item; } );
         return m?.label;
     }
 
@@ -74,10 +72,10 @@ export function Absence(props) {
     return <div>Loading absences list ...</div>
     
     const {absences, upcoming,memberlist} = data.data; 
-    console.log('absences before foreach',absences);
 
     let absentIndex = -1;
     let meuntil = '';
+    if(absences && Array.isArray(absences))
     absences.forEach((ab, index) => {
         if(ab.ID == current_user_id)
             {

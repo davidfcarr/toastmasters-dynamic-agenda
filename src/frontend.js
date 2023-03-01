@@ -5,20 +5,31 @@ import { QueryClient, QueryClientProvider } from "react-query";
 const queryClient = new QueryClient();
 
 import Agenda from "./Agenda";
+import {EvalWrapper} from "./EvalWrapper";
+
 window.addEventListener('load', function(event) {
     const currentdoc = document.getElementById('react-agenda');
-    let post_id = currentdoc.getAttribute('post_id');
-    console.log('init post_id',currentdoc.getAttribute('post_id'));
-    //const agenda_root = document.getElementById('react-agenda');
-    //if(agenda_root)
+    let mode_init = currentdoc.getAttribute('mode');
+    if(('evaluation_demo' == mode_init) || ('evaluation_admin' == mode_init))
+    {
         ReactDOM.render(
-    <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <Agenda post_id={post_id} />
-        </QueryClientProvider>
-  </React.StrictMode>,
-        document.getElementById('react-agenda'));
-    //console.log('agenda div not found');
+            <React.StrictMode>
+                <QueryClientProvider client={queryClient}>
+                    <EvalWrapper mode_init={mode_init} />
+                </QueryClientProvider>
+          </React.StrictMode>,
+                document.getElementById('react-agenda'));        
+    }
+    else {
+        ReactDOM.render(
+            <React.StrictMode>
+                <QueryClientProvider client={queryClient}>
+                    <Agenda mode_init={mode_init} />
+                </QueryClientProvider>
+          </React.StrictMode>,
+                document.getElementById('react-agenda'));        
+    }
+    
 });
 
 //<ReactQueryDevtools initialIsOpen={false} position="bottom-right" />

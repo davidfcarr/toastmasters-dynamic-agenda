@@ -47,10 +47,7 @@ function send() {
             console.log(responsedata);
             makeNotification('Message sent',false,responsedata.content);
                 });
-                //console.log(responsedata.status);
             }
-
-        //https://demo.toastmost.org/wp-json/rsvptm/v1/tm_role?tm_ajax
 }
 
   return (

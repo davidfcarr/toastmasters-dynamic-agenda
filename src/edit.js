@@ -4,6 +4,7 @@
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
  */
 import { __ } from '@wordpress/i18n';
+import { SelectControl } from '@wordpress/components';
 
 /**
  * React hook that is used to mark the block wrapper element.
@@ -29,13 +30,20 @@ import './editor.scss';
  *
  * @return {WPElement} Element to render.
  */
-export default function Edit() {
+export default function Edit( { attributes,setAttributes } ) {
+	const blockProps = useBlockProps();
+	const modes = [{'value':'','label':'Default'},{'value':'evaluation_demo','label':'Evaluation Demo'}];
 	return (
-		<p { ...useBlockProps() }>
+		<p { ...blockProps }>
 			{ __(
 				'Toastmasters Dynamic Agenda will display here',
 				'toastmasters-dynamic-agenda'
 			) }
+			<br />
+			<SelectControl label="Open Mode" value={blockProps.mode} 
+							onChange={ ( newmode ) => setAttributes( { 'mode':newmode } ) }
+							options={ modes }			
+			/>
 		</p>
 	);
 }

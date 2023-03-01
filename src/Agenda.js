@@ -1,19 +1,21 @@
-import React, {useState, useEffect, useRef} from "react"
+import React, {useState, useEffect, Suspense} from "react"
 import { SelectControl, ToggleControl, RadioControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
-import {EvaluationTool} from "./EvaluationTool.js";
+//import EvaluationTool from "./EvaluationTool.js";
+const EvaluationTool = React.lazy(() => import('./EvaluationTool.js'));
 import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
 import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
 import {SignupNote} from './SignupNote.js';
-import {Reorganize} from './Reorganize';
+import Reorganize from './Reorganize';
+//const Reorganize = React.lazy(() => import('./Reorganize.js'));
 import {Absence} from './Absence.js';
 import {Hybrid} from './Hybrid.js';
 import {useBlocks} from './queries.js';
 
-export default function Agenda() {
+export default function Agenda(props) {
     let initialPost = 0;
     if('rsvpmaker' == wpt_rest.post_type) {
         initialPost = wpt_rest.post_id;
@@ -24,8 +26,8 @@ export default function Agenda() {
     }
     const [post_id, setPostId] = useState(initialPost);
     const [current_user_id,setCurrentUserId] = useState(0);
-    const [mode, setMode] = useState('signup');
-    const [showDetails, setshowDetails] = useState(true);
+    const [mode, setMode] = useState((props.mode_init) ? props.mode_init : 'signup');
+    const [showDetails, setshowDetails] = useState('all');
     const [scrollTo,setScrollTo] = useState('react-agenda');
     const [notification,setNotification] = useState(null);
     const [notificationTimeout,setNotificationTimeout] = useState(null);
@@ -54,7 +56,6 @@ export default function Agenda() {
     
     if(axiosdata) {
         const {permissions} = axiosdata?.data;
-        console.log('permissions',permissions);
     }
 
     function calcTimeAllowed(attrs) {
@@ -76,7 +77,6 @@ export default function Agenda() {
                 console.log('scroll to id could not find element '+id);
                 return;
             }
-        console.log('scroll to id '+id);
         access.scrollIntoView({behavior: 'smooth'}, true);
     }
 
@@ -84,19 +84,32 @@ function ModeControl() {
     const modeoptions = (user_can('edit_post') || user_can('organize_agenda')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
     if(user_can('edit_post'))
         modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
+    const viewoptions = ('reorganize' == mode) ? [{'value':'all','label':'Show All'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'},{'value':'timed','label':'Timed Elements Only'}] : [{'value':'all','label':'Show Details'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'}];
     return (
     <div id="fixed-mode-control">
         {notification && <div className="tm-notification tm-notification-success suggestion-notification"> <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
-        {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><ToggleControl label="Show Details"
-            help={
-                (true == showDetails)
-                    ? 'Notes + Speech Details'
-                    : 'Outline View'
-            }
-            checked={ showDetails }
-            onChange={ () => {let newvalue = !showDetails; setshowDetails( newvalue ); }} /></div>}
+        {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><SelectControl label="View Options"
+            options={viewoptions}
+            value={ showDetails }
+            onChange={ (newvalue) => { console.log('setshowDetails',newvalue); setshowDetails( newvalue ); }} /></div>}
         <RadioControl className="radio-mode" selected={mode} label="Mode" onChange={(value)=> { setScrollTo('react-agenda');setMode(value); }  } options={modeoptions}/>
+        <p className="mode-help">{getHelpMessage()}</p>
         </div>)
+}
+
+function getHelpMessage() {
+    if('signup' == mode)
+    return 'Sign yourself up for roles and enter/update speech details';
+if('edit' == mode)
+    return 'Assign others to roles and edit their speech details. Rearrange or delete assignments.';
+if('suggest' == mode)
+    return 'Nominate another member for a role -- they will get an email notification that makes it easy to say yes';
+if('evaluation' == mode)
+    return 'Provide written speech feedback using digital versions of the evaluation forms';
+if('reorganize' == mode)
+    return 'Rearrange roles and other elements on your agenda and adjust the timing';
+if('settings' == mode)
+    return 'Update your standard meeting template or switch the template for the current meeting. Adjust event date and time. Update settings.';
 }
     function user_can(permission) {
         if(axiosdata.data.permissions[permission])
@@ -110,7 +123,6 @@ function ModeControl() {
     if(!axiosdata.data.current_user_id) 
         return <p>You must be logged in as a member of this website to see the signup form.</p>
 
-    //console.log('current_user_id ' + agenda.current_user_id);
     const data = axiosdata.data;
     const raw = ['core/image','core/paragraph','core/heading','wp4toastmasters-signupnote']
     const ignore = ['wp4toastmasters/agendanoterich2','wp4toastmasters/milestone','wp4toastmasters/help']
@@ -121,9 +133,6 @@ function ModeControl() {
         setPostId(data.post_id);
     if(!current_user_id)
         setCurrentUserId(data.current_user_id);
-
-
-    console.log('data for agenda return', data);
 
     if('settings' == mode)
     {
@@ -140,14 +149,16 @@ function ModeControl() {
         return(
             <div className="agendawrapper">
             <ModeControl />
+            <Suspense fallback={<h1>Loading ...</h1>}>
             <EvaluationTool scrolltoId={scrolltoId} makeNotification={makeNotification} data={data} evaluate={evaluate} setEvaluate={setEvaluate} />
+            </Suspense>
             </div>
         );
     }
 
 
     if('reorganize' == mode)
-        return <Reorganize makeNotification={makeNotification} showDetails={showDetails} setshowDetails={setshowDetails} data={data} mode={mode} ModeControl={ModeControl} post_id={post_id}  />
+        return <Suspense fallback={<h1>Loading ...</h1>}><Reorganize data={data} mode={mode} setMode={setMode} post_id={post_id} makeNotification={makeNotification} ModeControl={ModeControl} showDetails={showDetails} setshowDetails={setshowDetails} setScrollTo={setScrollTo} setEvaluate={setEvaluate} /></Suspense>
 
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
@@ -158,8 +169,6 @@ function ModeControl() {
             {Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
                 datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 if(block?.attrs?.time_allowed) {
-                    console.log(block.blockName+' role '+block?.attrs?.role+' blocktime'+date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true}));
-                    console.log('blocktime add '+block.attrs.time_allowed+' minutes');
                     date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
                     if(block.attrs.padding_time)
                         date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.padding_time) * 60000) );
@@ -169,17 +178,18 @@ function ModeControl() {
                     return null;
                     if('signup' == mode) {
                         if('wp4toastmasters/role' == block.blockName) {
-                            Array.isArray(block.assignments) && block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
-                            console.log('role block',block);
-                            console.log('role block member options',block.memberoptions);
+                            if('speakers-evaluators' == showDetails && !['Speaker','Evaluator'].includes(block.attrs.role))
+                                return null;
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock  makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} />
+                            <RoleBlock makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} />
                             <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
                             </div>
                             )
-                        }    
+                        }
+                        if('speakers-evaluators' == showDetails)
+                            return null;
                         else if(showDetails && 'wp4toastmasters/agendaedit' == block.blockName) {
                             return (
                                 <div key={'block'+blockindex} id={'block'+blockindex} className="block">
@@ -216,7 +226,6 @@ function ModeControl() {
                     }//end signup blocks
                     else if ('edit' == mode) {
                         if('wp4toastmasters/role' == block.blockName) {
-                            block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
@@ -248,7 +257,6 @@ function ModeControl() {
                             </div>)
                         }
                         else if ('wp4toastmasters/absences'==block.blockName) {
-                            console.log('absences',data.absences);
                             return <Absence  makeNotification={makeNotification} absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} />
                         }
                         else if ('wp4toastmasters/hybrid'==block.blockName) {
@@ -257,9 +265,9 @@ function ModeControl() {
                         else
                             return null;
                     }//end edit blocks
+                    
                     else if ('suggest' == mode) {
                         if('wp4toastmasters/role' == block.blockName) {
-                            block.assignments.forEach( (assignment,roleindex) => {console.log(block.attrs.role +': '+roleindex+' name:'+assignment.name)} );
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>

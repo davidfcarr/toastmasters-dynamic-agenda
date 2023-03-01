@@ -4,6 +4,7 @@
  *
  * Replace them with your own styles or remove the file completely.
  */
+ 
 .wp-block-create-block-toastmasters-dynamic-agenda {
 	background-color: #21759b;
 	color: #fff;
@@ -140,6 +141,7 @@ button.blockmove:hover {
 	opacity: 1;
 	z-index: 200;
 }
+
 #fixed-mode-control .radio-mode {
 	width: 600px;
 	margin-left: auto;
@@ -252,4 +254,20 @@ min-height: 150px;
 .evaluation-note {
 	width: 100%;
 	height: 2em;
+}
+.down-up {
+	width: 100%;
+	clear:both;
+}
+.mode-help {
+	text-align: center;
+	font-style: italic;
+}
+@media (min-width: 35em) {
+	.insert-selects {
+		display: grid;
+		gap: 1em;
+		grid-auto-flow: column;
+		grid-auto-columns: 1fr;
+	}
 }

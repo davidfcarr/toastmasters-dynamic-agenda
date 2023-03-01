@@ -1,15 +1,13 @@
-import React from "react"
+import React, {useState} from "react"
 import apiClient from './http-common.js';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
 
-export function useBlocks(post_id) {
-    console.log('use blocks called with post id',post_id);
+export function useBlocks(post_id,mode='') {
     function fetchBlockData(queryobj) {
         const post_id = queryobj.queryKey[1];
-        console.log('fetch block data post id',post_id);
-        return apiClient.get('blocks_data/'+post_id);
+        return apiClient.get('blocks_data/'+post_id+'?mode='+mode);
     }
-    return useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 60000 });
+    return useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 60000, 'meta': mode });
 }
     
 async function updateAgendaPost (agenda) {
@@ -24,14 +22,12 @@ export function initSendEvaluation(post_id, setSent, makeNotification) {
     
     return useMutation(postEvaluation, {
         onSuccess: (data, error, variables, context) => {
-            console.log('evaluation sent',data);
-            console.log('onsuccess variables', variables);
             makeNotification(data.data.status);
             setSent(data.data.message);
         },
         onError: (err, variables, context) => {
-            console.log('mutate assignment error');
-            console.log(err);
+            makeNotification('error posting evaluation');
+            console.log('error posting evaluation',err);
           },
     
           }
@@ -44,7 +40,6 @@ export function initChangeBlockAttribute(post_id,blockindex) {
     function changeBlockAttribute(key,value) {
         const prevdata = prev.data;
         prevdata.blocksdata[blockindex].attrs[key] = value;
-        console.log('changed prevdata',prevdata);
         return prevdata;
     }
     return changeBlockAttribute;
@@ -62,7 +57,6 @@ export function updateAgenda(post_id,makeNotification,Inserter = null) {
                 const newdata = {
                     ...oldQueryData, data: {...data,blocksdata: agenda.blocksdata}
                 };
-                console.log('modified query to return',newdata);
                 return newdata;
             }) 
             makeNotification('Updating ...');
@@ -71,15 +65,16 @@ export function updateAgenda(post_id,makeNotification,Inserter = null) {
             return {previousValue}
         },
         onSettled: (data, error, variables, context) => {
-            console.log('onsettled variables', variables);
             queryClient.invalidateQueries(['blocks-data',variables.post_id]);
+        },
+        onSuccess: (data, error, variables, context) => {
             makeNotification('Updated');
         },
         onError: (err, variables, context) => {
-            console.log('mutate assignment error');
-            console.log(err);
+            makeNotification('Error '+err.message);
+            console.log('updateAgenda error',err);
             queryClient.setQueryData("blocks-data", context.previousValue);
-          },
+        },
     
           }
 )
@@ -89,9 +84,7 @@ function onSuccess(e) {
         if(e.current_user_id) {
             setCurrentUserId(e.current_user_id);
             setPostId(e.post_id);
-            console.log('user id on init '+e.post_id);
         }
-        console.log('downloaded data',e);
     }
 function onError(e) {
     console.log('error downloading data',e);
@@ -99,7 +92,9 @@ function onError(e) {
 
 export function useEvaluation(project,evalSuccess) {
     function fetchEvaluation(queryobj) {
-        return apiClient.get('evaluation/?project='+project);
+        const speakerparam = window.location.href.match(/speaker=([0-9]+)/);
+        const speaker_id = (speakerparam && speakerparam[1]) ? speakerparam[1] : '';
+        return apiClient.get('evaluation/?project='+project+'&speaker='+speaker_id);
     }
     return useQuery(['evaluation',project], fetchEvaluation, { enabled: true, retry: 2, onSuccess: evalSuccess, onError, refetchInterval: false });
 }

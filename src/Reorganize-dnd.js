@@ -1,8 +1,7 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
-import { __experimentalNumberControl as NumberControl, SelectControl, ToggleControl } from '@wordpress/components';
+import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
-import DeleteButton from "./Delete.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
 import {Inserter} from "./Inserter.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
@@ -10,15 +9,21 @@ import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {SignupNote} from './SignupNote.js';
 import {EditableNote} from './EditableNote.js';
 import {Up, Down, DownUp} from './icons.js';
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import {updateAgenda} from './queries.js';
 
 export default function Reorganize(props) {
-    const {data, mode,post_id, makeNotification, ModeControl,showDetails, setMode, setScrollTo, setEvaluate} = props;
+    const {data, mode,post_id, makeNotification, ModeControl,showDetails, setshowDetails} = props;
     const [sync,setSync] = useState(true);
-    const [editThis,setEditThis] = useState(-1);
+    const [downUpOn,setDownUpOn] = useState(-1);
     const {mutate:agendaMutate} = updateAgenda(post_id, makeNotification,Inserter);
     if('reorganize' != mode)
         return null;
+    console.log('reorg mode',mode);
+    console.log('reorg RoleBlock',RoleBlock);
+    console.log('reorg DragDropContext',DragDropContext);
+    console.log('reorg Droppable',Droppable);
+    console.log('reorg Draggable',Draggable);
         
     function calcTimeAllowed(attrs) {
         let time_allowed = 0;
@@ -97,8 +102,8 @@ export default function Reorganize(props) {
 
     function makeExcerpt(html) {
         let excerpt =  html.replaceAll(/<[^>]+>/g,' ');
-        if(excerpt.length > 25)
-        excerpt = excerpt.substring(0,25) + '...';
+        if(excerpt.length > 150)
+        excerpt = excerpt.substring(0,150) + '...';
         return excerpt;
     }
 
@@ -131,33 +136,7 @@ function onDragEnd(result) {
     agendaMutate({...data,blocksdata: items});
 }
 
-function selectMove(source,destination) {
-    console.log('selectMove '+source+' to '+destination);
-    const items = [];
-    let myblock = data.blocksdata[source];
-    console.log('drag source',source);
-    console.log('drag destination',destination);
-    if('top' == destination) {
-        items.push(myblock);
-        myblock = null;
-    }
-    data.blocksdata.forEach((block,index) => {
-        if(index == source) {
-            console.log('selectMove skip '+index);
-            return;
-        }
-        items.push(block);
-        if(index == destination) {
-            console.log('selectMove insert '+index);
-            items.push(myblock);
-            myblock = null;
-        }
-    });
-    if(myblock) // something went wrong, add it to the end
-        items.push(myblock);
-    agendaMutate({...data,blocksdata: items});
-}
-
+    const raw = ['core/image','core/paragraph','core/heading','wp4toastmasters/signupnote']
     let date = new Date(data.datetime);
     const dateoptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const localedate = date.toLocaleDateString('en-US',dateoptions);
@@ -207,58 +186,65 @@ function selectMove(source,destination) {
     }
     
     const blockclass = "block reorgblock";
-    let movechoices = [{'label':'Where to?','value':''},{'label':'Move to Top','value':'top'}];
-    let label = '';
-    let choicesForBlock;
-    {data.blocksdata && data.blocksdata.map((block, blockindex) => {
-        if(!block.blockName)
-            return null;
-        label = 'After: '+block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note');
-        if(block.attrs.role)
-            label = label.concat(' '+block.attrs.role);
-        if(block.attrs.editable)
-            label = label.concat(' '+block.attrs.editable);
-        if(block.innerHTML)
-            label = label.concat(' '+makeExcerpt(block.innerHTML));
-        movechoices.push({'value':blockindex,'label':label});
-    })}
+    let label;
+
+    if(!DragDropContext)
+        return <p>Error loading drag and drop component</p>
 
     return (
+      <DragDropContext onDragEnd={onDragEnd}>
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{localedate} {data.is_template && <span>(Template)</span>} </h4>
             <ModeControl makeNotification={makeNotification} />
+            <Droppable droppableId="droppable">
+            {
+              (provided, snapshot) => (
+                <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                style={getListStyle(snapshot.isDraggingOver)}  
+                >
             {data.blocksdata && data.blocksdata.map((block, blockindex) => {
                 if(!block.blockName)
                     return null;
-                if(('speakers-evaluators' == showDetails) && ('wp4toastmasters/role' != block.blockName || !['Speaker','Evaluator'].includes(block.attrs.role)) ) {
-                    return null;
-                }
-                if(('timed' == showDetails) && !block.attrs.time_allowed ) {
-                    return null;
-                }
-                choicesForBlock = [];
-                movechoices.forEach(
-                (choice) => {
-                    if(choice.value != blockindex)
-                        choicesForBlock.push(choice);
-                }
-                ); 
+                else {
+                  let key = block.blockName.replace(/^[^/]+\//,'');
                   return (
-                    <>
-                    <div className="reorgdrag">
-                    <div className="reorgdragup"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }><Up /></button></div>
-                    <div className="reorgdragdown"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }><Down /></button> </div>
-                    <div className="reorganize-drag">
-                      <div><strong>{block.datestring}</strong></div>
-                      <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')}: {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
-                      </div>
-                      {showDetails && 'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/editing-agendas-and-agenda-templates-with-the-front-end-organize-screen/">Editing agendas and agenda templates with the front-end Organize screen</a> for video and written instructions.</p>}
-                    {showDetails && 'wp4toastmasters/role' == block.blockName && (<div>
-                        {(editThis == blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><RoleBlock makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode="edit" block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} /></>}
-                        {(editThis != blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} />{block.assignments.map((a) => <div>{a.name}</div>)}</>}
-
-                            <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
+                <>
+                  <div className="reorgdrag">
+                  <div className="reorgdragup"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'up') } }><Up /></button></div>
+                  <div className="reorgdragdown"><button className="blockmove" onClick={() => { moveBlock(blockindex, 'down') } }><Down /></button> </div>
+                  <div className="reorganize-drag">
+                  <Draggable key={block.DnDid} draggableId={block.DnDid} index={blockindex}>
+                  {(provided, snapshot) => { //console.log('is dragging',snapshot.isDragging);
+                  if(snapshot.isDragging) {
+                    if(showDetails)
+                        {
+                            setshowDetails(false);
+                            makeNotification('Switching to outline view for drag-and-drop');
+                        }
+                    console.log('snapshot',snapshot);
+                  }
+                  return (
+                    <div 
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      style={getItemStyle(
+                        snapshot.isDragging,
+                        provided.draggableProps.style
+                      )}
+                    >
+                    <div><strong>{block.datestring}</strong></div>
+                    <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')}: {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
+                    </div>
+                  ) } }
+                </Draggable>
+                </div>
+                {showDetails && 'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/editing-agendas-and-agenda-templates-with-the-front-end-organize-screen/">Editing agendas and agenda templates with the front-end Organize screen</a> for video and written instructions.</p>}
+                {showDetails && 'wp4toastmasters/role' == block.blockName && (<div>
+                    {showDetails && <RoleBlock  makeNotification={makeNotification} agendadata={data} block={block} apiClient={apiClient} blockindex={blockindex} mode={mode} />}
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } agendaMutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberControl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; agendaMutate(data);}} /></div>}</div>
                     {('Speaker' == block.attrs.role) && 
                     (<div>
@@ -294,15 +280,13 @@ function selectMove(source,destination) {
             </div>)}
             {showDetails && 'wp4toastmasters/agendaedit' == block.blockName && (
                     <div>
-                    {showDetails && (editThis == blockindex) && <div><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /> <EditableNote makeNotification={makeNotification} mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} /></div>}
-                    {showDetails && (editThis != blockindex) && <div><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /> <SanitizedHTML innerHTML={block.attrs.edithtml} /></div>}
+                    {showDetails && <EditableNote  makeNotification={makeNotification} mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} />}
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div></div>
                     </div>
                 ) }
                 {showDetails && 'wp4toastmasters/agendanoterich2' == block.blockName && (
                     <div>
-                    {showDetails && (editThis == blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><EditorAgendaNote  makeNotification={makeNotification} blockindex={blockindex} block={block} replaceBlock={replaceBlock} /></>}
-                    {showDetails && (editThis != blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><SanitizedHTML innerHTML={block.innerHTML} /></>}
+                    {showDetails && <EditorAgendaNote  makeNotification={makeNotification} blockindex={blockindex} block={block} replaceBlock={replaceBlock} />}
                     <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div></div>
                     </div>
                 ) }
@@ -312,12 +296,21 @@ function selectMove(source,destination) {
                     </div>
                 ) }
                 {showDetails && block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
-                <p><SelectControl label="Move" options={choicesForBlock} onChange={(value) => selectMove(blockindex,value)} /></p>
-                {showDetails && <DeleteButton makeNotification={makeNotification} blockindex={blockindex} moveBlock={moveBlock} post_id={post_id} />}
-                </div>
                 {showDetails && <Inserter makeNotification={makeNotification} blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} />}
-                </>               
-                )
-            })}
-            </div>);
+                {(downUpOn == blockindex) && <div className="down-up">Down up control goes here</div>}
+            </div>
+            {snapshot.isDraggingOver && provided.placeholder}
+            </>
+            )
+                }
+            })
+            }
+                </div>
+              )
+
+            }
+            </Droppable>
+            </div>
+            </DragDropContext>
+            );
 }

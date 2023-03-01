@@ -10,6 +10,13 @@
 	"supports": {
 		"html": false
 	},
+	"attributes": {
+        "mode": {
+            "type": "string",
+            "source": "html",
+			"default": ""
+        }
+    },
 	"textdomain": "toastmasters-dynamic-agenda",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",

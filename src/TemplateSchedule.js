@@ -4,7 +4,6 @@ import { TextControl, ToggleControl, SelectControl } from '@wordpress/components
 export function TemplateSchedule(props) {
     const {post_id,metadata,metaMutate,makeNotification} = props;
 
-    console.log('metadata in template schedule',metadata);
 const days = ["_sked_Sunday",
 "_sked_Monday",
 "_sked_Tuesday",
@@ -25,8 +24,6 @@ const frequency = ["_sked_Varies",
                 <div className="frequency">{
                     frequency.map((k) => {
                         let checked = (metadata[k] > 0);
-                        console.log('key '+k,metadata[k]);
-                        console.log('key checked',checked);
                         return <ToggleControl label={k.replace('_sked_','')} checked={checked} onChange={(value) => {metaMutate({'post_id':post_id,'kv':[{'key':k,'value':!checked}]}); makeNotification(k.replace('_sked_','')+' = '+value)} } />
                     })
                 }</div>
@@ -34,14 +31,11 @@ const frequency = ["_sked_Varies",
                 {
                     days.map((k) => {
                         let checked = (metadata[k] > 0);
-                        console.log('key '+k,metadata[k]);
-                        console.log('key checked',checked);
                         return <ToggleControl label={k.replace('_sked_','')} checked={checked} onChange={() => {metaMutate({'post_id':post_id,'kv':[{'key':k,'value':!checked}]}); makeNotification(k.replace('_sked_','')+' = '+value)} } />
                     })
                 }   
                 </div>
                 <div className="schedule-details">
-                    {console.log()}
                 <p><strong>Start Time</strong> <input type="time" value={metadata['_sked_hour']+':'+metadata['_sked_minutes']} onChange={(e) => {let split = e.target.value.split(':'); metaMutate({'post_id':post_id,'kv':[{'key':'_sked_hour','value':split[0]},{'key':'_sked_minutes','value':split[1]}]}) }} /></p>
                 <SelectControl
 			label="Time Display"
