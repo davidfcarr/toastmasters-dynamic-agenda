@@ -1,5 +1,6 @@
 import React from "react"
-import { TextControl, ToggleControl, SelectControl } from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 
 export function TemplateSchedule(props) {
     const {post_id,metadata,metaMutate,makeNotification} = props;
@@ -37,7 +38,7 @@ const frequency = ["_sked_Varies",
                 </div>
                 <div className="schedule-details">
                 <p><strong>Start Time</strong> <input type="time" value={metadata['_sked_hour']+':'+metadata['_sked_minutes']} onChange={(e) => {let split = e.target.value.split(':'); metaMutate({'post_id':post_id,'kv':[{'key':'_sked_hour','value':split[0]},{'key':'_sked_minutes','value':split[1]}]}) }} /></p>
-                <SelectControl
+                <SelectCtrl
 			label="Time Display"
 			value={metadata['_sked_duration']}
 			options={ [

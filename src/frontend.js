@@ -6,6 +6,7 @@ const queryClient = new QueryClient();
 
 import Agenda from "./Agenda";
 import {EvalWrapper} from "./EvalWrapper";
+import ReorgWrapper from "./ReorgWrapper";
 
 window.addEventListener('load', function(event) {
     const currentdoc = document.getElementById('react-agenda');
@@ -16,6 +17,16 @@ window.addEventListener('load', function(event) {
             <React.StrictMode>
                 <QueryClientProvider client={queryClient}>
                     <EvalWrapper mode_init={mode_init} />
+                </QueryClientProvider>
+          </React.StrictMode>,
+                document.getElementById('react-agenda'));        
+    }
+    else if('settings_admin' == mode_init)
+    {
+        ReactDOM.render(
+            <React.StrictMode>
+                <QueryClientProvider client={queryClient}>
+                    <ReorgWrapper />
                 </QueryClientProvider>
           </React.StrictMode>,
                 document.getElementById('react-agenda'));        

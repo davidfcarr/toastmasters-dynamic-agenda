@@ -1,8 +1,8 @@
 import React, {useState, useEffect, Suspense} from "react"
-import { SelectControl, ToggleControl, RadioControl } from '@wordpress/components';
+import { RadioControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 import RoleBlock from "./RoleBlock.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
-//import EvaluationTool from "./EvaluationTool.js";
 const EvaluationTool = React.lazy(() => import('./EvaluationTool.js'));
 import {TemplateAndSettings} from "./TemplateAndSettings.js";
 import {SanitizedHTML} from "./SanitizedHTML.js";
@@ -10,7 +10,6 @@ import {EditorAgendaNote} from './EditorAgendaNote.js';
 import {EditableNote} from './EditableNote.js';
 import {SignupNote} from './SignupNote.js';
 import Reorganize from './Reorganize';
-//const Reorganize = React.lazy(() => import('./Reorganize.js'));
 import {Absence} from './Absence.js';
 import {Hybrid} from './Hybrid.js';
 import {useBlocks} from './queries.js';
@@ -80,15 +79,21 @@ export default function Agenda(props) {
         access.scrollIntoView({behavior: 'smooth'}, true);
     }
 
-function ModeControl() {
-    const modeoptions = (user_can('edit_post') || user_can('organize_agenda')) ? [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'},{'label': 'Organize', 'value':'reorganize'}] : [{'label': 'Sign Up', 'value':'signup'},{'label': 'Edit', 'value':'edit'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
+function ModeControl(props) {
+    const {note} = props;
+    const modeoptions = [{'label': 'Sign Up', 'value':'signup'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
+    if(user_can('edit_post') || user_can('organize_agenda') || user_can('edit_signups'))
+        modeoptions.push({'label': 'Edit', 'value':'edit'});
+    if(user_can('edit_post') || user_can('organize_agenda'))
+        modeoptions.push({'label': 'Organize', 'value':'reorganize'});
     if(user_can('edit_post'))
         modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
     const viewoptions = ('reorganize' == mode) ? [{'value':'all','label':'Show All'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'},{'value':'timed','label':'Timed Elements Only'}] : [{'value':'all','label':'Show Details'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'}];
     return (
     <div id="fixed-mode-control">
+        {note && <p className="modenote">{note}</p>}
         {notification && <div className="tm-notification tm-notification-success suggestion-notification"> <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
-        {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><SelectControl label="View Options"
+        {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><SelectCtrl label="View Options"
             options={viewoptions}
             value={ showDetails }
             onChange={ (newvalue) => { console.log('setshowDetails',newvalue); setshowDetails( newvalue ); }} /></div>}
@@ -112,10 +117,12 @@ if('settings' == mode)
     return 'Update your standard meeting template or switch the template for the current meeting. Adjust event date and time. Update settings.';
 }
     function user_can(permission) {
-        if(axiosdata.data.permissions[permission])
-            return axiosdata.data.permissions[permission];
-        else
-            return false;
+        const permissions = axiosdata.data.permissions;
+        let answer = false;
+        if(permissions[permission]) {
+            answer = permissions[permission];
+        }
+        return answer;
     }
 
     if(isLoading)
@@ -162,7 +169,7 @@ if('settings' == mode)
 
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
-            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
+            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectCtrl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{date.toLocaleDateString('en-US',dateoptions)} {data.is_template && <span>(Template)</span>}</h4>
             <ModeControl makeNotification={makeNotification} />
             {!Array.isArray(data.blocksdata) && <p>Error loading agenda blocks array.</p>}
@@ -257,12 +264,12 @@ if('settings' == mode)
                             </div>)
                         }
                         else if ('wp4toastmasters/absences'==block.blockName) {
-                            return <Absence  makeNotification={makeNotification} absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} />
+                            return <Absence makeNotification={makeNotification} absences={data.absences} current_user_id={current_user_id} mode={mode} post_id={post_id} />
                         }
                         else if ('wp4toastmasters/hybrid'==block.blockName) {
                             return <Hybrid makeNotification={makeNotification} current_user_id={current_user_id} post_id={post_id} mode={mode} />
                         }
-                        else
+                        else 
                             return null;
                     }//end edit blocks
                     

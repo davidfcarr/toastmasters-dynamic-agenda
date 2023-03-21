@@ -1,15 +1,14 @@
 import React, {useState} from "react"
 import apiClient from './http-common.js';
-import {useQuery,useMutation, useQueryClient} from 'react-query';
+import {useQuery, useMutation, useQueryClient} from 'react-query';
 
-export function useBlocks(post_id,mode='') {
+export function useBlocks(post_id,mode='',admin = false) {
     function fetchBlockData(queryobj) {
-        const post_id = queryobj.queryKey[1];
-        return apiClient.get('blocks_data/'+post_id+'?mode='+mode);
+        return apiClient.get('blocks_data/'+post_id+'?mode='+mode+'?admin='+admin);
     }
     return useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 60000, 'meta': mode });
 }
-    
+
 async function updateAgendaPost (agenda) {
     return await apiClient.post('update_agenda', agenda);
 }
@@ -74,9 +73,8 @@ export function updateAgenda(post_id,makeNotification,Inserter = null) {
             makeNotification('Error '+err.message);
             console.log('updateAgenda error',err);
             queryClient.setQueryData("blocks-data", context.previousValue);
-        },
-    
-          }
+        },    
+    }
 )
 }
 

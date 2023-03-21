@@ -3,7 +3,6 @@ import { RadioControl } from '@wordpress/components';
 
 export function EvaluationPrompt(props) {
 const {item,promptindex,note,response,setResponses,setNotes} = props;
-//const editorRef = useRef(note);
 const [choice,setChoice] = useState(response);
 const [edit,setEdit] = useState(true);
 const [savedtext,setSavedtext] = useState('');
@@ -13,6 +12,7 @@ function save (e) {
       setNotes((prev) => {prev[promptindex] = savedtext; return prev});
       setEdit(false);
 } 
+
   return (
     <>
      <p><strong>{item.prompt}</strong> {choice}</p>

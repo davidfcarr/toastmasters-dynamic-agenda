@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react"
-import { __experimentalNumberControl as NumberControl, SelectControl, ToggleControl, TextControl } from '@wordpress/components';
-//import {RichText} from '@wordpress/components'
+import { TextControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 import ProjectChooser from "./ProjectChooser.js";
 import Suggest from "./Suggest.js";
 import {Up, Down, Top, Close} from './icons.js';
@@ -19,6 +19,15 @@ export default function RoleBlock (props) {
 
     if(!attrs.role)
         return null;
+
+    function user_can(permission) {
+        let answer = false;
+        if(agendadata.permissions[permission]) {
+            answer = agendadata.permissions[permission];
+        }
+        return answer;
+    }
+    
     let roletagbase = '_'+attrs.role.replaceAll(/[^A-Za-z]/g,'_')+'_';
     const [viewTop,setViewTop] = useState('');
     let roles = [];
@@ -210,15 +219,14 @@ const multiAssignmentMutation = useMutation(
             return (<div id={id} key={id}>
             {assignment.ID > 0 && 'Speaker' == attrs.role && <p><a className="evaluation-link" href="#" onClick={() => {setEvaluate(assignment);setMode('evaluation')}} >Evaluation Form</a></p>}
                 <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>} {}</h3>
-                <>{assignment.ID == 0 && ('signup' == mode) && <p><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></p>}</>
+                <p>{assignment.ID == 0 && ('signup' == mode) && <><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></>} {('signup' == mode) && <>{user_can('edit_signups') && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button>} {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</>}</p>
             <>{'suggest' == mode && (assignment.ID == 0) && <Suggest memberoptions={memberoptions} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
-            <>{'edit' == mode && <SelectControl label="Select Member" value={assignment.ID} options={memberoptions} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
+            <>{'edit' == mode && <SelectCtrl label="Select Member" value={assignment.ID} options={memberoptions} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
             <>{'edit' == mode && assignment.ID == 0 && <div className="tmflexrow"><div className="tmflex30"><TextControl label="Or Add Guest" value={guests[roleindex]} onChange={ (id) => { let newguests = [...guests]; newguests[roleindex] = id; setGuests(newguests); } } /></div><div className="tmflex30"><br /><button className="tmform" onClick={() => { updateAssignment({'ID':guests[roleindex],'name':guests[roleindex] + ' (guest)','role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count}); let newguests = [...guests]; newguests[roleindex] = ''; setGuests(newguests);} } >Add</button></div></div>}</>
             <>{'suggest' != mode && ('edit' == mode || (current_user_id == assignment.ID)) && (assignment.ID > 0) && (role.search('Speaker') > -1)  && (role.search('Backup') == -1) && showDetails && <ProjectChooser attrs={attrs} assignment={assignment} project={assignment.project} title={assignment.title} intro={assignment.intro} manual={assignment.manual} maxtime={assignment.maxtime} display_time={assignment.display_time} updateAssignment={updateAssignment} roleindex={roleindex} blockindex={blockindex} /> }</>
 
             <>{!!('edit' == mode) && assignments.length > 1 && <MoveButtons assignments={assignments} roleindex={roleindex} filledslots={filledslots} openslots={openslots} attrs={attrs} shownumber={shownumber} />}</>
-            {('signup' == mode) && <p><button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button> {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</p>}
-
+            
             </div>)
         } )}
         </>

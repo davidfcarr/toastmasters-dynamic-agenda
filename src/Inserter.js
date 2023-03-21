@@ -1,7 +1,8 @@
 import React, {useState, useRef} from "react"
-import { __experimentalNumberControl as NumberControl, SelectControl, ToggleControl, TextControl, RadioControl } from '@wordpress/components';
+import { TextControl } from '@wordpress/components';
 import apiClient from './http-common.js';
 import {useQuery, useQueryClient} from 'react-query';
+import {SelectCtrl} from './Ctrl.js'
 
 export function Inserter(props) {
     const [insert,setInsert] = useState(null);
@@ -20,9 +21,9 @@ export function Inserter(props) {
 
         return (
         <div className="insert-selects">
-            <div><SelectControl label="Insert Role" options={rolelist} onChange={(role)=> {if('custom' == role) setCustom('custom'); else if('Speaker' == role) updateInsert('wp4toastmasters/role',{'role':'Speaker','time_allowed':7}); else if('Evaluator' == role) updateInsert('wp4toastmasters/role',{'role':'Evaluator','time_allowed':3}); else updateInsert('wp4toastmasters/role',{'role':role,'time_allowed':0}); }} />
+            <div><SelectCtrl label="Insert Role" options={rolelist} onChange={(role)=> {if('custom' == role) setCustom('custom'); else if('Speaker' == role) updateInsert('wp4toastmasters/role',{'role':'Speaker','time_allowed':7}); else if('Evaluator' == role) updateInsert('wp4toastmasters/role',{'role':'Evaluator','time_allowed':3}); else updateInsert('wp4toastmasters/role',{'role':role,'time_allowed':0}); }} />
             {custom && <div><TextControl label="Custom Label" value={custom} onChange={setCustom} /> <button className="blockmove" onClick={() => updateInsert('wp4toastmasters/role',{'role':'custom','custom_role':custom,'time_allowed':0})}>Add</button></div>}</div>
-            <div><SelectControl label="Insert Other" options={blocklist} onChange={(value)=> {updateInsert(value)}} /></div>
+            <div><SelectCtrl label="Insert Other" options={blocklist} onChange={(value)=> {updateInsert(value)}} /></div>
         </div>
         )
     }

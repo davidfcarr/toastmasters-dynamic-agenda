@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react"
-import { SelectControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 import {useQuery,useMutation, useQueryClient} from 'react-query';
 import apiClient from './http-common.js';
 
@@ -90,7 +90,7 @@ export function Hybrid(props) {
         {hybrid.map( (ab, index) => {
             return <p><button className="tmform" onClick={() => {removeInPerson(ab.ID,index,ab.until);} }>Remove</button> {ab.name}</p>
         } ) }
-        <SelectControl label="Add Member to List" value={addtolist} options={memberlist} onChange={(id) => { setAddToList(id) }} />
+        <SelectCtrl label="Add Member to List" value={addtolist} options={memberlist} onChange={(id) => { setAddToList(id) }} />
         <button className="tmform" onClick={() => {addInPerson(addtolist)} }>Add</button>
     </div>);
 

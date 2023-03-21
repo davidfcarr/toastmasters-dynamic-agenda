@@ -4,7 +4,7 @@
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-i18n/
  */
 import { __ } from '@wordpress/i18n';
-import { SelectControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 
 /**
  * React hook that is used to mark the block wrapper element.
@@ -40,7 +40,7 @@ export default function Edit( { attributes,setAttributes } ) {
 				'toastmasters-dynamic-agenda'
 			) }
 			<br />
-			<SelectControl label="Open Mode" value={blockProps.mode} 
+			<SelectCtrl label="Open Mode" value={blockProps.mode} 
 							onChange={ ( newmode ) => setAttributes( { 'mode':newmode } ) }
 							options={ modes }			
 			/>

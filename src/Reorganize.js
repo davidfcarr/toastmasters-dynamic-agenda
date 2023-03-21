@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
-import { __experimentalNumberControl as NumberControl, SelectControl, ToggleControl } from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import DeleteButton from "./Delete.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
@@ -11,6 +11,7 @@ import {SignupNote} from './SignupNote.js';
 import {EditableNote} from './EditableNote.js';
 import {Up, Down, DownUp} from './icons.js';
 import {updateAgenda} from './queries.js';
+import {SelectCtrl, NumberCtrl} from './Ctrl.js'
 
 export default function Reorganize(props) {
     const {data, mode,post_id, makeNotification, ModeControl,showDetails, setMode, setScrollTo, setEvaluate} = props;
@@ -39,7 +40,6 @@ export default function Reorganize(props) {
     }
 
     function moveBlock(blockindex, direction = 'up') {
-        console.log('reorg moveBlock param',blockindex+','+direction);
         if((blockindex == 0) && (direction == 'up'))
             return; // ignore
         let moveableBlocks = getMoveAbleBlocks();
@@ -69,7 +69,6 @@ export default function Reorganize(props) {
             (block, index) => {
                 newblocks.push(block);
                 if(index == blockindex) {
-                    console.log('newblock',{'blockName': blockname, 'DnDid':'temp'+Date.now(),'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                     newblocks.push({'blockName': blockname, 'assignments': [], 'attrs': attributes,'innerHTML':innerHTML,'edithtml':edithtml});
                 }
             }
@@ -109,8 +108,6 @@ function onDragEnd(result) {
     const source = result.source.index;
     const destination = result.destination.index;
     let myblock = data.blocksdata[source];
-    console.log('drag source',source);
-    console.log('drag destination',destination);
     data.blocksdata.forEach((block,index) => {
         if(index == source) {
             console.log('drag skip '+index);
@@ -161,13 +158,15 @@ function selectMove(source,destination) {
     let date = new Date(data.datetime);
     const dateoptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const localedate = date.toLocaleDateString('en-US',dateoptions);
+    let endtime = '';
     data.blocksdata.map((block, blockindex) => {
         data.blocksdata[blockindex].datestring = date.toLocaleTimeString('en-US',{'hour': "2-digit", 'minute': "2-digit",'hour12':true});
         if(block?.attrs?.time_allowed) {
             date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.time_allowed) * 60000) );
             if(block.attrs.padding_time)
                 date.setMilliseconds(date.getMilliseconds() + (parseInt(block.attrs.padding_time) * 60000) );
-            data.blocksdata[blockindex].datestring = data.blocksdata[blockindex].datestring.concat( ' to '+ date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true}) );
+            endtime = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
+            data.blocksdata[blockindex].datestring = data.blocksdata[blockindex].datestring.concat( ' to '+ endtime );
         }});
 
     const moveableBlocks = getMoveAbleBlocks ();
@@ -176,24 +175,6 @@ function selectMove(source,destination) {
       background: isDraggingOver ? "white" : "white",
     });
     
-    const getItemStyle = (isDragging, draggableStyle) => {
-      //console.log('draggableStyle',draggableStyle);
-      return ({
-        // some basic styles to make the items look a bit nicer
-        userSelect: "none",
-
-        minHeight: "52px",
-      
-        // change background colour if dragging
-        background: isDragging ? "lightgreen" : "#EFEFEF",
-        borderBottom: "medium solid #7C2128",
-        marginBottom: "5px",
-      
-        // styles we need to apply on draggables
-        ...draggableStyle
-      });
-    } 
-
     function syncToEvaluator(blocksdata,count) {
         if(!sync)
             return blocksdata;
@@ -225,9 +206,9 @@ function selectMove(source,destination) {
 
     return (
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
-            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectControl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
+            <>{('rsvpmaker' != wpt_rest.post_type) && <SelectCtrl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{localedate} {data.is_template && <span>(Template)</span>} </h4>
-            <ModeControl makeNotification={makeNotification} />
+            <ModeControl note={'Based on time allotted, meeting will end at '+endtime} makeNotification={makeNotification} />
             {data.blocksdata && data.blocksdata.map((block, blockindex) => {
                 if(!block.blockName)
                     return null;
@@ -253,13 +234,13 @@ function selectMove(source,destination) {
                       <div><strong>{block.datestring}</strong></div>
                       <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')}: {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
                       </div>
-                      {showDetails && 'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/editing-agendas-and-agenda-templates-with-the-front-end-organize-screen/">Editing agendas and agenda templates with the front-end Organize screen</a> for video and written instructions.</p>}
+                      {showDetails && 'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/organize-agenda-tool/">Organize Agenda Tool</a> for video and written instructions.</p>}
                     {showDetails && 'wp4toastmasters/role' == block.blockName && (<div>
                         {(editThis == blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><RoleBlock makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode="edit" block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} /></>}
                         {(editThis != blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} />{block.assignments.map((a) => <div>{a.name}</div>)}</>}
 
                             <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
-                    <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } agendaMutate(data); }} /></div><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberControl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; agendaMutate(data);}} /></div>}</div>
+                    <div className="tmflexrow"><div className="tmflex30"><NumberCtrl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } agendaMutate(data); }} /></div><div className="tmflex30"><NumberCtrl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberCtrl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; agendaMutate(data);}} /></div>}</div>
                     {('Speaker' == block.attrs.role) && 
                     (<div>
                     <p><em>Padding time is a little extra time for switching between and introducing speakers (not included in the time allowed for speeches).</em></p>
@@ -296,14 +277,14 @@ function selectMove(source,destination) {
                     <div>
                     {showDetails && (editThis == blockindex) && <div><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /> <EditableNote makeNotification={makeNotification} mode={mode} block={block} blockindex={blockindex} uid={block.attrs.uid} post_id={post_id} /></div>}
                     {showDetails && (editThis != blockindex) && <div><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /> <SanitizedHTML innerHTML={block.attrs.edithtml} /></div>}
-                    <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div></div>
+                    <div className="tmflexrow"><div className="tmflex30"><NumberCtrl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div></div>
                     </div>
                 ) }
                 {showDetails && 'wp4toastmasters/agendanoterich2' == block.blockName && (
                     <div>
                     {showDetails && (editThis == blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><EditorAgendaNote  makeNotification={makeNotification} blockindex={blockindex} block={block} replaceBlock={replaceBlock} /></>}
                     {showDetails && (editThis != blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><SanitizedHTML innerHTML={block.innerHTML} /></>}
-                    <div className="tmflexrow"><div className="tmflex30"><NumberControl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div></div>
+                    <div className="tmflexrow"><div className="tmflex30"><NumberCtrl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : 0} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div></div>
                     </div>
                 ) }
                 {showDetails && 'wp4toastmasters/signupnote' == block.blockName && (
@@ -312,7 +293,7 @@ function selectMove(source,destination) {
                     </div>
                 ) }
                 {showDetails && block.innerHTML && !['wp4toastmasters/signupnote','wp4toastmasters/agendanoterich2'].includes(block.blockname) && <SanitizedHTML innerHTML={block.innerHTML} />}
-                <p><SelectControl label="Move" options={choicesForBlock} onChange={(value) => selectMove(blockindex,value)} /></p>
+                <p><SelectCtrl label="Move" options={choicesForBlock} onChange={(value) => selectMove(blockindex,value)} /></p>
                 {showDetails && <DeleteButton makeNotification={makeNotification} blockindex={blockindex} moveBlock={moveBlock} post_id={post_id} />}
                 </div>
                 {showDetails && <Inserter makeNotification={makeNotification} blockindex={blockindex} insertBlock={insertBlock} moveBlock={moveBlock} post_id={post_id} />}

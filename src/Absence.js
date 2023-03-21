@@ -1,10 +1,10 @@
 import React, {useState, useEffect} from "react"
-import { SelectControl } from '@wordpress/components';
 import {useQuery,useMutation, useQueryClient} from 'react-query';
 import apiClient from './http-common.js';
+import {SelectCtrl} from './Ctrl.js'
 
 export function Absence(props) {
-    const {current_user_id, post_id, mode} = props;
+    const {current_user_id, post_id, mode, makeNotification} = props;
     const [addtolist,setAddToList] = useState(0);
     const [until,setUntil] = useState('');
 
@@ -87,10 +87,10 @@ export function Absence(props) {
     return (<div className="absence">
         <h3>Planned Absences</h3>
         {absences.map( (ab, index) => {
-            return <p><button className="tmform" onClick={() => {removeAbsence(ab.ID,index,ab.until);} }>Remove</button> {ab.name} {(ab.until != '') && <em>until {ab.until}</em>}</p>
+            return <p><button className="tmform" onClick={() => {removeAbsence(ab.ID,index,ab.until);} }>Remove</button> {ab.name} { (ab.until && ab.until != '') && <em>until {new Date(ab.until).toLocaleDateString()}</em>}</p>
         } ) }
-        <SelectControl label="Add Member to List" value={addtolist} options={memberlist} onChange={(id) => { setAddToList(id) }} />
-        <SelectControl label="One meeting or several?" options={upcoming} value={until} onChange={setUntil} />
+        <SelectCtrl label="Add Member to List" value={addtolist} options={memberlist} onChange={(id) => { setAddToList(id) }} />
+        <SelectCtrl label="One meeting or several?" options={upcoming} value={until} onChange={setUntil} />
         <button className="tmform" onClick={() => {addAbsence(addtolist)} }>Add</button>
     </div>);
 
@@ -98,9 +98,9 @@ export function Absence(props) {
     return (<div className="absence">
     <h3>Planned Absences</h3>
     {absences.map( (ab) => {
-    return <p>{ab.name} {(ab.until != '') && <em>until {ab.until}</em>}</p>
+    return <p>{ab.name} { (ab.until && ab.until != '') && <em>until {new Date(ab.until).toLocaleDateString()}</em>}</p>
     } ) }
-    {(absentIndex < 0) && <SelectControl label="One meeting or several?" options={upcoming} value={until} onChange={setUntil} />}
+    {(absentIndex < 0) && <SelectCtrl label="One meeting or several?" options={upcoming} value={until} onChange={setUntil} />}
     <p>{(absentIndex > -1) && <button className="tmform" onClick={() => {removeAbsence(current_user_id,absentIndex)} }>Remove Me</button>} {(absentIndex < 0) && <button  className="tmform" onClick={() => {addAbsence(current_user_id)} }>Add Me</button>}</p>
     </div>);
 }

@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef} from "react"
-import { SelectControl, TextControl } from '@wordpress/components';
+import { TextControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 
 export function EvaluationProjectChooser(props) {
     const [path, setPath] = useState('');
@@ -33,9 +34,9 @@ export function EvaluationProjectChooser(props) {
         return <p>Loading project choices</p>
     return (
         <>
-        <div><SelectControl options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
-        <div><SelectControl options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
-        <div><SelectControl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); setEvaluate((prev) =>{
+        <div><SelectCtrl options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
+        <div><SelectCtrl options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
+        <div><SelectCtrl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); setEvaluate((prev) =>{
             prev.manual = manual;
             prev.project = value;
             return prev;

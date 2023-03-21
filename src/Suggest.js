@@ -1,10 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import { SelectControl, RadioControl } from '@wordpress/components';
+import { RadioControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 import { SanitizedHTML } from './SanitizedHTML';
-
-//import { AwesomeButton } from 'react-awesome-button';
-//import 'react-awesome-button/dist/styles.css';
 
 export default function Suggest(props) {
   const editorRef = useRef(null);
@@ -52,7 +50,7 @@ function send() {
 
   return (
     <>
-    <SelectControl label="Member to Nominate" value={member} options={props.memberoptions} onChange={(id) => { setMember(id); }} />
+    <SelectCtrl label="Member to Nominate" value={member} options={props.memberoptions} onChange={(id) => { setMember(id); }} />
       <Editor
         onInit={(evt, editor) => editorRef.current = editor}
         initialValue={"I am nominating you for a role!"}

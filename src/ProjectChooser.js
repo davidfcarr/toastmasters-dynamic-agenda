@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from "react"
-import { SelectControl, TextControl } from '@wordpress/components';
+import {TextControl } from '@wordpress/components';
 import { Editor } from '@tinymce/tinymce-react';
+import {SelectCtrl} from './Ctrl.js'
 
 export default function ProjectChooser(props) {
     const [choices, setChoices] = useState([]);
@@ -51,9 +52,9 @@ export default function ProjectChooser(props) {
         return <p>Loading project choices</p>
     return (
         <>
-        <div><SelectControl options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
-        <div><SelectControl options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
-        <div><SelectControl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); projectTime(value); } } /></div>
+        <div><SelectCtrl options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
+        <div><SelectCtrl options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
+        <div><SelectCtrl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); projectTime(value); } } /></div>
         <div className="tmflexrow">
         <div className="tmflex50">
         <TextControl label="Display Time" onChange={(value) => { setDisplayTime(value) } } value={display_time} />

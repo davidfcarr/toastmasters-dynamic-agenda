@@ -1,9 +1,12 @@
 import React, {useState, useEffect} from "react"
-import { SelectControl, TextControl } from '@wordpress/components';
+import { TextControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 import { SanitizedHTML } from './SanitizedHTML.js';
 import { useEvaluation,initSendEvaluation } from './queries.js';
 import { EvaluationProjectChooser } from "./EvaluationProjectChooser.js";
 import { EvaluationPrompt } from "./EvaluationPrompt.js";
+import {Yoodli} from './icons.js'
+import clipboard from 'clipboardy';
 
 export default function EvaluationTool(props) {
 const {makeNotification,data,evaluate,setEvaluate,scrolltoId,mode} = props;
@@ -13,6 +16,7 @@ const [path, setPath] = useState('Path Not Set');
 const [manual, setManual] = useState((evaluate && evaluate.manual) ? evaluate.manual : '');
 const [title, setTitle] = useState((evaluate && evaluate.title) ? evaluate.title : '');
 const [name, setName] = useState((evaluate && evaluate.name) ? evaluate.name : '');
+const [evaluatorName, setEvaluatorName] = useState(data.current_user_name);
 const [project, setProject] = useState((evaluate && evaluate.project) ? evaluate.project : '');
 const [responses,setResponses] = useState([]);
 const [notes,setNotes] = useState([]);
@@ -70,25 +74,38 @@ data.blocksdata.forEach( (block) => {
 });
 
 function send() {
-    const ev = {'evaluate':evaluate,'form':form,'responses':responses,'notes':notes};
+    const ev = {'evaluate':evaluate,'form':form,'responses':responses,'notes':notes,'evaluator_name':evaluatorName};
     sendEvaluation(ev);
 }
 
 let done;
 let openslots = [];
 
+function copyEvaluation() {
+    const blobInput = new Blob([sent], {type: 'text/html'});
+	const clipboardItemInput = new ClipboardItem({'text/html' : blobInput});
+	navigator.clipboard.write([clipboardItemInput]);
+}
+
+console.log('evaluation tool mode',mode);
+
 return (
     <div className='eval'>
         <h2>Evaluation Tool</h2>
-        {sent && <div>   <SanitizedHTML innerHTML={sent} /><p><button onClick={() => {setSent('');setEvaluate({'ID':'','name':'','project':'','manual':'','title':''});setTitle('');}}>Reset</button></p></div>}
+        {sent && (<div><p><button onClick={copyEvaluation}>Copy to Clipboard</button> <em>works in most browsers, but not Firefox</em></p>   <SanitizedHTML innerHTML={sent} /><p><button onClick={() => {setSent('');setEvaluate({'ID':'','name':'','project':'','manual':'','title':''});setTitle('');}}>Reset</button></p></div>)}
+        <h3>Get Feedback</h3>
         {data.current_user_id && <p>To request an evaluation from another member, send them this link<br /><a href={data.request_evaluation}>{data.request_evaluation}</a><br /></p>}
-        <p>To give an evaluation, use the form below. When both the evaluator and the speaker, have user accounts, the completed evaluation will be sent by email and archived on the member dashboard.</p>
-        {!name && (!mode || 'evaluation_demo' != mode) && <SelectControl value={JSON.stringify(evaluate)} options={assignment_options} onChange={(value) => {if('guest' == value) {setName('guest'); return;} const newevaluate = JSON.parse(value); setTitle(newevaluate.title); setProject(newevaluate.project); setEvaluate(newevaluate); }  } />}
+        {data.current_user_id == false && <p>Toastmost users can request an evaluation from a fellow member using this system.</p>}
+        <div id="YoodliPromo"><Yoodli /></div>
+        <h3>Give Feedback</h3>
+        <p>To give an evaluation, use the form below. When both the evaluator and the speaker have user accounts, the completed evaluation will be sent by email and archived on the member dashboard.</p>
+        {!name && (!mode || 'evaluation_demo' != mode) && <SelectCtrl value={JSON.stringify(evaluate)} options={assignment_options} onChange={(value) => {if('guest' == value) {setName('guest'); return;} const newevaluate = JSON.parse(value); setTitle(newevaluate.title); setProject(newevaluate.project); setEvaluate(newevaluate); }  } />}
         {(name || (mode && 'evaluation_demo' == mode)) && <TextControl label="Speaker Name" value={name} onChange={(value) => {if(!value) {setName(' '); return;}; setName(value); setEvaluate((prev) =>{
             prev.ID = value;
             prev.name = value;
             return prev;
         });}} />}
+        {!data.current_user_name && <TextControl label="Evaluator Name" value={evaluatorName} onChange={(value) => {setEvaluatorName(value)} } />}
         <EvaluationProjectChooser manual={manual} project={project} title={title} setManual={setManual} setProject={setProject} setTitle={setTitle} setEvaluate={setEvaluate} makeNotification={makeNotification} />
         <SanitizedHTML innerHTML={form.intro} />
         {form.prompts.map((item,index) => {

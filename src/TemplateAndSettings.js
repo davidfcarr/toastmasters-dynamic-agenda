@@ -1,7 +1,8 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
 import {useMutation, useQueryClient} from 'react-query';
-import { __experimentalNumberControl as NumberControl, TextareaControl, SelectControl, ToggleControl, RadioControl, TextControl } from '@wordpress/components';
+import { ToggleControl } from '@wordpress/components';
+import {SelectCtrl} from './Ctrl.js'
 import {EventDateTime} from './EventDateTime.js';
 import {TemplateSchedule} from './TemplateSchedule.js';
 import { rsvpMetaData, initRSVPMetaMutate } from "./rsvpmaker-api.js";
@@ -75,15 +76,19 @@ const permissionsMutation = useMutation(
     }
 );
 
+const loading_icon = document.getElementById('loading-icon');
+if(loading_icon)
+    loading_icon.style = 'display: none';
+
     return (
         <div>
         <h2>Template Options and Settings</h2>
         <p>Currently editing <em>{currentlyEditing()}</em></p>
-        <SelectControl label="Edit Template" value={templateToEdit} options={templates} onChange={(value) => setTemplateToEdit(parseInt(value))} />
+        <SelectCtrl label="Edit Template" value={templateToEdit} options={templates} onChange={(value) => setTemplateToEdit(parseInt(value))} />
         <p><button className="tmform" onClick={() => { makeNotification('Updating ...'); setPostId(templateToEdit);}}>Edit</button></p>
         <>{data.has_template && <div><p><button className="tmform" onClick={() => { let mymutation = {'copyfrom':data.post_id,'copyto':data.has_template,'post_id':data.post_id}; templateMutation.mutate(mymutation); makeNotification('Template '+data.has_template+' updated.',false,[{'template_prompt':data.has_template}]);} }>Update Template</button></p><p><em>Click to apply changes you have made to this agenda document to the underlying template.</em></p></div>}</>
         <>{data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+data.post_id}>Create/Update</a> - copy content to new and existing events</p>}</>
-        <>{data.has_template && (<><SelectControl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
+        <>{data.has_template && (<><SelectCtrl label="Apply a Different Template" value={newtemplate} options={templates} onChange={(value) => setNewTemplate(value)} />
         <p><button className="tmform" onClick={() => {  makeNotification('Updating ...'); let mymutation = {'copyfrom':newtemplate,'copyto':data.post_id,'post_id':data.post_id}; templateMutation.mutate(mymutation); }}>Apply</button> <em>Use a different template, such as one for a contest.</em></p>
         </>)}</>
         
