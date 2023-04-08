@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
-import { ToggleControl } from '@wordpress/components';
+import { TextControl, ToggleControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import DeleteButton from "./Delete.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
@@ -241,6 +241,7 @@ function selectMove(source,destination) {
 
                             <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
                     <div className="tmflexrow"><div className="tmflex30"><NumberCtrl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } agendaMutate(data); }} /></div><div className="tmflex30"><NumberCtrl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberCtrl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; agendaMutate(data);}} /></div>}</div>
+                    <TextControl label="Note About Role (optional)" value={block.attrs.agenda_note} onChange={ (value) => { data.blocksdata[blockindex].attrs.agenda_note = value; agendaMutate(data); } } />
                     {('Speaker' == block.attrs.role) && 
                     (<div>
                     <p><em>Padding time is a little extra time for switching between and introducing speakers (not included in the time allowed for speeches).</em></p>

@@ -77,7 +77,7 @@ const assignmentMutation = useMutation(
                 queryClient.invalidateQueries(['blocks-data',post_id]);
             },
             onSuccess: (data, error, variables, context) => {
-                makeNotification('Updated assignment: '+variables.role,true);
+                makeNotification('Updated assignment: '+data.data.role,true);
             },
             onError: (err, variables, context) => {
                 console.log('mutate assignment error',err);
@@ -219,6 +219,7 @@ const multiAssignmentMutation = useMutation(
             return (<div id={id} key={id}>
             {assignment.ID > 0 && 'Speaker' == attrs.role && <p><a className="evaluation-link" href="#" onClick={() => {setEvaluate(assignment);setMode('evaluation')}} >Evaluation Form</a></p>}
                 <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>} {}</h3>
+                {attrs.agenda_note && <p><em>{attrs.agenda_note}</em></p>}
                 <p>{assignment.ID == 0 && ('signup' == mode) && <><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></>} {('signup' == mode) && <>{user_can('edit_signups') && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button>} {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</>}</p>
             <>{'suggest' == mode && (assignment.ID == 0) && <Suggest memberoptions={memberoptions} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
             <>{'edit' == mode && <SelectCtrl label="Select Member" value={assignment.ID} options={memberoptions} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>

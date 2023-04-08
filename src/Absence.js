@@ -14,7 +14,7 @@ export function Absence(props) {
         return apiClient.get('absences?post_id='+post_id);
     }
     function onSuccess(data) {
-        console.log('absences',data);
+        //console.log('absences',data);
     }
     function onError(err, variables, context) {
         console.log('absences error',err);
