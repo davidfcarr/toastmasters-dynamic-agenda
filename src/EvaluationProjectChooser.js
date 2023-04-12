@@ -30,13 +30,15 @@ export function EvaluationProjectChooser(props) {
             setManual(manual);
     }
 
-    if(!choices || typeof choices.manuals == 'undefined')
+    console.log('evaluation project chooser choices', choices);
+
+    if(!choices || !choices.manuals || typeof choices.manuals == 'undefined')
         return <p>Loading project choices</p>
     return (
         <>
-        <div><SelectCtrl options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
-        <div><SelectCtrl options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
-        <div><SelectCtrl options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); setEvaluate((prev) =>{
+        <div><SelectCtrl source="paths" options={choices['paths']} value={path} label="Path" onChange={(value) => setPath(value)} /></div>
+        <div><SelectCtrl source="manuals" options={choices['manuals'][path]} value={manual} label="Level" onChange={(value) => {setManual(value)}} /></div>
+        <div><SelectCtrl source="projects" options={(choices['projects'][manual]) ? choices['projects'][manual] : [{'value':'',label:'Set Path and Level to See Projects'}] } value={project} label="Project" onChange={(value) => { setProject(value); setEvaluate((prev) =>{
             prev.manual = manual;
             prev.project = value;
             return prev;

@@ -23,6 +23,9 @@ const [notes,setNotes] = useState([]);
 const [form,setForm] = useState({});
 const [sent,setSent] = useState('');
 
+let query = ((window.location.href.indexOf('?') == -1)) ? '?mode=evaluation' : '&mode=evaluation' ;
+let resetLink = ((window.location.href.indexOf('mode') == -1)) ? window.location.href + query : window.location.href;
+
 const {mutate:sendEvaluation} = initSendEvaluation(data.post_id, setSent,makeNotification);
 
 useEffect(()=>{
@@ -37,6 +40,7 @@ if(isLoading || isFetching)
     return <p>Loading ...</p>
 
 let assignment_options = [{'value':'','label':'Choose Speaker'},{'value':'guest','label':'Enter Guest Name'}];
+console.log('evaluation dashboard data',data.blocksdata);
 if(data.blocksdata)
 data.blocksdata.forEach( (block) => {
     if(block.attrs && block.attrs.role && 'Speaker' == block.attrs.role && block.assignments && Array.isArray(block.assignments) ) {
@@ -73,12 +77,17 @@ data.blocksdata.forEach( (block) => {
     }
 });
 
+if(assignment_options.length < 4)
+data.allmembers.forEach( (opt) => {assignment_options.push(opt)} );
+
+console.log('evaluation assignment options',assignment_options);
+
 function send() {
     const ev = {'evaluate':evaluate,'form':form,'responses':responses,'notes':notes,'evaluator_name':evaluatorName};
     sendEvaluation(ev);
+    makeNotification('Saving ...');
 }
 
-let done;
 let openslots = [];
 
 function copyEvaluation() {
@@ -92,14 +101,14 @@ console.log('evaluation tool mode',mode);
 return (
     <div className='eval'>
         <h2>Evaluation Tool</h2>
-        {sent && (<div><p><button onClick={copyEvaluation}>Copy to Clipboard</button> <em>works in most browsers, but not Firefox</em></p>   <SanitizedHTML innerHTML={sent} /><p><button onClick={() => {setSent('');setEvaluate({'ID':'','name':'','project':'','manual':'','title':''});setTitle('');}}>Reset</button></p></div>)}
+        {sent && (<div><p><button onClick={copyEvaluation}>Copy to Clipboard</button> <em>works in most browsers, but not Firefox</em></p> <p><a href={resetLink}>Reset</a></p>  <SanitizedHTML innerHTML={sent} /><p><a href={resetLink}>Reset</a></p></div>)}
         <h3>Get Feedback</h3>
         {data.current_user_id && <p>To request an evaluation from another member, send them this link<br /><a href={data.request_evaluation}>{data.request_evaluation}</a><br /></p>}
         {data.current_user_id == false && <p>Toastmost users can request an evaluation from a fellow member using this system.</p>}
         <div id="YoodliPromo"><Yoodli /></div>
         <h3>Give Feedback</h3>
         <p>To give an evaluation, use the form below. When both the evaluator and the speaker have user accounts, the completed evaluation will be sent by email and archived on the member dashboard.</p>
-        {!name && (!mode || 'evaluation_demo' != mode) && <SelectCtrl value={JSON.stringify(evaluate)} options={assignment_options} onChange={(value) => {if('guest' == value) {setName('guest'); return;} const newevaluate = JSON.parse(value); setTitle(newevaluate.title); setProject(newevaluate.project); setEvaluate(newevaluate); }  } />}
+        {!name && (!mode || 'evaluation_demo' != mode) && <SelectCtrl source="Member or Guest" value={JSON.stringify(evaluate)} options={assignment_options} onChange={(value) => {if('guest' == value) {setName('guest'); return;} const newevaluate = JSON.parse(value); setTitle(newevaluate.title); setProject(newevaluate.project); setEvaluate(newevaluate); }  } />}
         {(name || (mode && 'evaluation_demo' == mode)) && <TextControl label="Speaker Name" value={name} onChange={(value) => {if(!value) {setName(' '); return;}; setName(value); setEvaluate((prev) =>{
             prev.ID = value;
             prev.name = value;

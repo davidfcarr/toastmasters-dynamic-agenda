@@ -4,7 +4,8 @@ import {useQuery, useMutation, useQueryClient} from 'react-query';
 
 export function useBlocks(post_id,mode='',admin = false) {
     function fetchBlockData(queryobj) {
-        return apiClient.get('blocks_data/'+post_id+'?mode='+mode+'?admin='+admin);
+        admin = window.location.href.indexOf('wp-admin') != -1;
+        return apiClient.get('blocks_data/'+post_id+'?mode='+mode+'&admin='+admin);
     }
     return useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 60000, 'meta': mode });
 }
@@ -94,5 +95,5 @@ export function useEvaluation(project,evalSuccess) {
         const speaker_id = (speakerparam && speakerparam[1]) ? speakerparam[1] : '';
         return apiClient.get('evaluation/?project='+project+'&speaker='+speaker_id);
     }
-    return useQuery(['evaluation',project], fetchEvaluation, { enabled: true, retry: 2, onSuccess: evalSuccess, onError, refetchInterval: false });
+    return useQuery(['evaluation',project], fetchEvaluation, { enabled: true, retry: 2, onSuccess: evalSuccess, onError, refetchInterval: false, refetchOnWindowFocus: false, });
 }

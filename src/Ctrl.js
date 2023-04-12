@@ -1,6 +1,10 @@
 import React, {useState, useEffect, useRef} from "react"
 
 export function SelectCtrl (props) {
+    if(!props.options) {
+        console.log('SelectCtrl called without props.options', props);
+        return;
+    }
     const style = {'display': (props.display) ? props.display : 'block', 'maxWidth': (props.width) ? props.width : '350px' };
     return (
         <div style={style}>
