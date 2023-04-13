@@ -172,7 +172,8 @@ if('settings' == mode)
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectCtrl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{date.toLocaleDateString('en-US',dateoptions)} {data.is_template && <span>(Template)</span>}</h4>
             <ModeControl makeNotification={makeNotification} />
-            {!Array.isArray(data.blocksdata) && <p>Error loading agenda blocks array.</p>}
+            {!Array.isArray(data.blocksdata) && <p>Error loading agenda (<a href={window.location.href+'?revert=1'}>try alternate version</a>).</p>}
+            <p>Error loading agenda (<a href={window.location.href+'?revert=1'}>try alternate version</a>)</p>            
             {Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
                 datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 if(block?.attrs?.time_allowed) {
