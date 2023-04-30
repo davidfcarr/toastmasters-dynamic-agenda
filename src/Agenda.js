@@ -55,6 +55,9 @@ export default function Agenda(props) {
     }
     
     function NextMeetingPrompt() {
+        if(typeof data == 'undefined')
+            return;
+
         let pid = data.upcoming.findIndex((item) => item.value == post_id);
         if(data.upcoming[pid +1])
             return <div className="next-meeting-prompt">Would you like to sign up for the <a href={data.upcoming[pid +1].permalink+'?newsignup'}>Next meeting?</a></div>
@@ -166,7 +169,6 @@ if('settings' == mode)
             </div>
         );
     }
-
 
     if('reorganize' == mode)
         return <Suspense fallback={<h1>Loading ...</h1>}><Reorganize data={data} mode={mode} setMode={setMode} post_id={post_id} makeNotification={makeNotification} ModeControl={ModeControl} showDetails={showDetails} setshowDetails={setshowDetails} setScrollTo={setScrollTo} setEvaluate={setEvaluate} /></Suspense>
