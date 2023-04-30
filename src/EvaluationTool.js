@@ -7,11 +7,13 @@ import { EvaluationProjectChooser } from "./EvaluationProjectChooser.js";
 import { EvaluationPrompt } from "./EvaluationPrompt.js";
 import {Yoodli} from './icons.js'
 import clipboard from 'clipboardy';
+import { isError } from "react-query";
 
 export default function EvaluationTool(props) {
 const {makeNotification,data,evaluate,setEvaluate,scrolltoId,mode} = props;
-const {isLoading,isFetching,data:evaldata} = useEvaluation(evaluate.project, onSuccess);
-
+const {isLoading,isError,isFetching,data:evaldata} = useEvaluation(evaluate.project, onSuccess);
+if(isError)
+    return <p>Error loading evaluation data.</p>
 const [path, setPath] = useState('Path Not Set');
 const [manual, setManual] = useState((evaluate && evaluate.manual) ? evaluate.manual : '');
 const [title, setTitle] = useState((evaluate && evaluate.title) ? evaluate.title : '');

@@ -1,0 +1,23 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 2,
+	"name": "wp4toastmasters/logo",
+	"version": "0.1.0",
+	"title": "Toastmasters Logo",
+	"category": "widgets",
+	"icon": "smiley",
+	"description": "Add the Toastmasters logo (choice of size)",
+	"attributes": {
+		"src": {
+		"type": "string",
+		"default": "https://toastmost.org/tmbranding/toastmasters-75.png"
+		}
+	},
+	"supports": {
+		"html": false
+	},
+	"textdomain": "rsvpmaker-for-toastmasters",
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./index.css",
+	"style": "file:./style-index.css"
+}

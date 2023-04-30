@@ -45,7 +45,8 @@ function ModeControl() {
 
 
 const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} = useBlocks(post_id);
-
+if(isError)
+    return <p>Error loading evaluation data (EvalWrapper)</p>
 if(isLoading)
     return <div>Loading ...</div>
     const data = axiosdata.data;

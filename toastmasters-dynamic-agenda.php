@@ -22,8 +22,23 @@
  */
 function create_block_toastmasters_dynamic_agenda_block_init() {
 	register_block_type( __DIR__ . '/build' );
+	$blocks = get_wpt_blocks();		
+	foreach ( $blocks as $dir => $args ) {
+		register_block_type( __DIR__ . '/build/'.$dir, $args );
+	}
 }
 add_action( 'init', 'create_block_toastmasters_dynamic_agenda_block_init' );
+function get_wpt_blocks() {
+	return array(
+		'logo' => array(),
+		'help'  => array(),
+		/*
+		'logo' => array('render_callback'=>''),
+		'help'  => array('render_callback'=>''),
+		*/
+	);
+}
+
 
 add_filter('block_type_metadata_settings','agenda_block_type_metadata',10,2);
 

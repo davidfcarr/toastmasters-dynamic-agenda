@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "wp4toastmasters/help",
+  "version": "0.1.0",
+  "title": "Toastmasters Help",
+  "keywords": [
+    "help",
+    "toastmasters"
+  ],
+  "category": "widgets",
+  "icon": "smiley",
+  "description": "Show help tips and links",
+  "supports": {
+    "html": false
+  },
+  "textdomain": "rsvpmaker-for-toastmasters",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}

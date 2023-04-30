@@ -15,7 +15,9 @@ export function TemplateAndSettings (props) {
     const [templateToEdit, setTemplateToEdit] = useState(data.is_template ? data.post_id: data.has_template);
     const [newtemplate, setNewTemplate] = useState(0);
 
-    const {data:mdata,isLoading:metaIsLoading} = rsvpMetaData(data.post_id);
+    const {data:mdata,isLoading:metaIsLoading,isError:metaIsError} = rsvpMetaData(data.post_id);
+    if(metaIsError)
+        return <p>Error loading event metadata</p>
     if(metaIsLoading) 
         console.log('metadata is loading');
     else if (!mdata.data) {

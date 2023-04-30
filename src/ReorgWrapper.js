@@ -35,6 +35,9 @@ export default function Agenda(props) {
     }
     
     const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} = useBlocks(post_id, mode,true);
+    if(isError)
+        return <p>Error loading ReorgWrapper.js data</p>
+
     useEffect(() => {scrolltoId(scrollTo); if('react-agenda' != scrollTo) setScrollTo('react-agenda'); },[mode])
     
     if(axiosdata?.data) {

@@ -20,6 +20,9 @@ export function Hybrid(props) {
         console.log('hybrid error',err);
     }
 
+    if(isError)
+        return <p>Error loading Hybrid.js data</p>
+
     const hybridMutation = useMutation(
         async (addremove) => { return await apiClient.post("hybrid?post_id="+post_id, addremove)},
         {

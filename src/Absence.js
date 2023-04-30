@@ -20,6 +20,9 @@ export function Absence(props) {
         console.log('absences error',err);
     }
 
+    if(isError)
+        return <p>Error loading absences</p>
+
     const queryClient = useQueryClient();
 
     const absMutation = useMutation(

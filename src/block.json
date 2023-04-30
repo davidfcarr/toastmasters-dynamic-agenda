@@ -20,6 +20,6 @@
 	"textdomain": "toastmasters-dynamic-agenda",
 	"editorScript": "file:./index.js",
 	"editorStyle": "file:./index.css",
-	"viewScript": ["file:./frontend.js","agenda-view-script"],
+	"viewScript": ["file:./frontend.js","file:./gblocks/index.js","agenda-view-script"],
 	"style": "file:./style-index.css"
 }

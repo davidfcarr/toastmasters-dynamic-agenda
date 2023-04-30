@@ -9,6 +9,7 @@ import {EvalWrapper} from "./EvalWrapper";
 import ReorgWrapper from "./ReorgWrapper";
 
 window.addEventListener('load', function(event) {
+    try {
     const currentdoc = document.getElementById('react-agenda');
     let mode_init = currentdoc.getAttribute('mode');
     if(('evaluation_demo' == mode_init) || ('evaluation_admin' == mode_init))
@@ -40,7 +41,12 @@ window.addEventListener('load', function(event) {
           </React.StrictMode>,
                 document.getElementById('react-agenda'));        
     }
-    
+}
+catch(error) {
+    console.log('no current doc found',error);
+}
+
 });
+
 
 //<ReactQueryDevtools initialIsOpen={false} position="bottom-right" />

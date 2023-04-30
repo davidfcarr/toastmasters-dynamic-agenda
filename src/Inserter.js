@@ -14,6 +14,9 @@ export function Inserter(props) {
     const { isLoading, isSuccess, isError, data:roledata, error, refetch } =
     useQuery('rolelist', fetchRoles, { enabled: true, retry: 2, onSuccess, onError });
 
+    if(isError)
+        return <p>Error loading Inserter.js roledata</p>
+
     const blocklist = [{'label':'Select Note or Other Block','value':''},{'label': 'Agenda Note','value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'},{'label': 'Speaker/Evaluator Table', 'value':'wp4toastmasters/speaker-evaluator'},{'label': 'Track Absences', 'value':'wp4toastmasters/absences'}];    
 
     function InsertControl() {

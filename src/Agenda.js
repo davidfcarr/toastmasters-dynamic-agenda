@@ -32,6 +32,18 @@ export default function Agenda(props) {
     const [notificationTimeout,setNotificationTimeout] = useState(null);
     const [evaluate,setEvaluate] = useState({'ID':'','name':'','project':'','manual':'','title':''});
 
+    function scrolltoId(id){
+        if(!id)
+            return;
+        var access = document.getElementById(id);
+        if(!access)
+            {
+                console.log('scroll to id could not find element '+id);
+                return;
+            }
+        access.scrollIntoView({behavior: 'smooth'}, true);
+    }
+
     function makeNotification(message, prompt = false, otherproperties = null) {
         if(notificationTimeout)
             clearTimeout(notificationTimeout);
@@ -49,9 +61,12 @@ export default function Agenda(props) {
         else
             return null;
     }
-    
-    const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} = useBlocks(post_id);
+
     useEffect(() => {scrolltoId(scrollTo); if('react-agenda' != scrollTo) setScrollTo('react-agenda'); },[mode])
+try {
+    const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} = useBlocks(post_id);
+    if(isError)
+        return <p>Error loading agenda data. Try <a href={window.location.href}>reloading the page</a>. You can also <a href={(window.location.href.indexOf('?') > 0) ? window.location.href +'&revert=1' : window.location.href +'?revert=1'}>use the old version of the signup form</a>.</p>
     
     if(axiosdata) {
         const {permissions} = axiosdata?.data;
@@ -67,17 +82,6 @@ export default function Agenda(props) {
         return time_allowed;
     }
 
-    function scrolltoId(id){
-        if(!id)
-            return;
-        var access = document.getElementById(id);
-        if(!access)
-            {
-                console.log('scroll to id could not find element '+id);
-                return;
-            }
-        access.scrollIntoView({behavior: 'smooth'}, true);
-    }
 
 function ModeControl(props) {
     const {note} = props;
@@ -236,7 +240,7 @@ if('settings' == mode)
                             return (
                             <div key={'block'+blockindex} id={'block'+blockindex} className="block">
                             <div><strong>{datestring}</strong></div>
-                            <RoleBlock  makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block} setEvaluate={setEvaluate} />
+                            <RoleBlock makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block} setEvaluate={setEvaluate} setMode={setMode} />
                             <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
                             </div>
                             )
@@ -290,4 +294,12 @@ if('settings' == mode)
                         return null;
             })}
         </div>
-)}
+)
+    
+}    
+catch (error) {
+    console.log(error);
+    return <p>Error loading agenda</p>
+}
+
+}

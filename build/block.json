@@ -22,6 +22,7 @@
   "editorStyle": "file:./index.css",
   "viewScript": [
     "file:./frontend.js",
+    "file:./gblocks/index.js",
     "agenda-view-script"
   ],
   "style": "file:./style-index.css"
