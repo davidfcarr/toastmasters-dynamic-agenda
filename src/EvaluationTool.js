@@ -13,12 +13,13 @@ export default function EvaluationTool(props) {
 const {makeNotification,data,evaluate,setEvaluate,scrolltoId,mode} = props;
 const {isLoading,isError,isFetching,data:evaldata} = useEvaluation(evaluate.project, onSuccess);
 if(isError)
-    return <p>Error loading evaluation data.</p>
+    return <p>Error loading evaluation data</p>
 const [path, setPath] = useState('Path Not Set');
 const [manual, setManual] = useState((evaluate && evaluate.manual) ? evaluate.manual : '');
 const [title, setTitle] = useState((evaluate && evaluate.title) ? evaluate.title : '');
 const [name, setName] = useState((evaluate && evaluate.name) ? evaluate.name : '');
 const [evaluatorName, setEvaluatorName] = useState(data.current_user_name);
+const [evaluatorEmail, setEvaluatorEmail] = useState();
 const [project, setProject] = useState((evaluate && evaluate.project) ? evaluate.project : '');
 const [responses,setResponses] = useState([]);
 const [notes,setNotes] = useState([]);
@@ -85,7 +86,7 @@ data.allmembers.forEach( (opt) => {assignment_options.push(opt)} );
 console.log('evaluation assignment options',assignment_options);
 
 function send() {
-    const ev = {'evaluate':evaluate,'form':form,'responses':responses,'notes':notes,'evaluator_name':evaluatorName};
+    const ev = {'evaluate':evaluate,'form':form,'responses':responses,'notes':notes,'evaluator_name':evaluatorName,'evaluator_email':evaluatorEmail};
     sendEvaluation(ev);
     makeNotification('Saving ...');
 }
@@ -105,8 +106,8 @@ return (
         <h2>Evaluation Tool</h2>
         {sent && (<div><p><button onClick={copyEvaluation}>Copy to Clipboard</button> <em>works in most browsers, but not Firefox</em></p> <p><a href={resetLink}>Reset</a></p>  <SanitizedHTML innerHTML={sent} /><p><a href={resetLink}>Reset</a></p></div>)}
         <h3>Get Feedback</h3>
-        {data.current_user_id && <p>To request an evaluation from another member, send them this link<br /><a href={data.request_evaluation}>{data.request_evaluation}</a><br /></p>}
-        {data.current_user_id == false && <p>Toastmost users can request an evaluation from a fellow member using this system.</p>}
+        {data.current_user_id && <p>To request an evaluation, share this link<br /><a href={data.request_evaluation}>{data.request_evaluation}</a> {data.request_evaluation.indexOf('admin') > 0 && <span>(login required)</span>}<br /></p>}
+        {data.current_user_id == false && <p>Toastmost users can request an evaluation from a fellow Toastmaster using this system.</p>}
         <div id="YoodliPromo"><Yoodli /></div>
         <h3>Give Feedback</h3>
         <p>To give an evaluation, use the form below. When both the evaluator and the speaker have user accounts, the completed evaluation will be sent by email and archived on the member dashboard.</p>
@@ -117,6 +118,7 @@ return (
             return prev;
         });}} />}
         {!data.current_user_name && <TextControl label="Evaluator Name" value={evaluatorName} onChange={(value) => {setEvaluatorName(value)} } />}
+        {(('evaluation_guest' == mode) && !data.is_user_logged_in) && <TextControl label="Evaluator Email" value={evaluatorEmail} onChange={(value) => {setEvaluatorEmail(value)} } />}
         <EvaluationProjectChooser manual={manual} project={project} title={title} setManual={setManual} setProject={setProject} setTitle={setTitle} setEvaluate={setEvaluate} makeNotification={makeNotification} />
         <SanitizedHTML innerHTML={form.intro} />
         {form.prompts.map((item,index) => {

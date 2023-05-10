@@ -14,7 +14,7 @@ export default function RoleBlock (props) {
         return null;
     const queryClient = useQueryClient();
     
-    const {current_user_id, current_user_name} = agendadata;
+    const {current_user_id, current_user_name, request_evaluation} = agendadata;
     const [guests,setGuests] = useState([].fill('',0,attrs.count));
 
     if(!attrs.role)
@@ -216,11 +216,22 @@ const multiAssignmentMutation = useMutation(
                 return null;
             }
             let id = 'role'+attrs.role.replaceAll(/[^A-z]/g,'')+roleindex;
+
+            if('assign' == mode) {
+                return (
+                    <div id={id} key={id} className="assignment">
+                     <div className="assignment-role">{role_label} {shownumber}</div>   
+                     <div className="assignment-assigned"><SelectCtrl label="Select Member" value={assignment.ID} options={memberoptions} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'display':'inline','width':''})}} /></div>
+                    </div>
+                )
+            }
+
             return (<div id={id} key={id}>
-            {assignment.ID > 0 && 'Speaker' == attrs.role && <p><a className="evaluation-link" href="#" onClick={() => {setEvaluate(assignment);setMode('evaluation')}} >Evaluation Form</a></p>}
+            {assignment.ID > 0 && (assignment.ID != current_user_id) && 'Speaker' == attrs.role && <p><a className="evaluation-link" href="#" onClick={() => {setEvaluate(assignment);setMode('evaluation')}} >Evaluation Form</a></p>}
+            {assignment.ID == current_user_id && 'Speaker' == attrs.role && <div className="evaluation-request"><strong>To request a digital evaluation, share this link</strong><br /><textarea rows="5" value={'Please use this link to evaluate my speech \n'+request_evaluation} /></div>}
                 <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>} {}</h3>
                 {attrs.agenda_note && <p><em>{attrs.agenda_note}</em></p>}
-                <p>{assignment.ID == 0 && ('signup' == mode) && <><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></>} {('signup' == mode) && <>{user_can('edit_signups') && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button>} {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</>}</p>
+                <p>{assignment.ID == 0 && ('signup' == mode) && <><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></>} {('signup' == mode) && <>{(assignment.ID != current_user_id) && user_can('edit_signups') && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button>} {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</>}</p>
             <>{'suggest' == mode && (assignment.ID == 0) && <Suggest memberoptions={memberoptions} roletag={roletagbase+(roleindex+1)} post_id={props.post_id} current_user_id={current_user_id} />}</>
             <>{'edit' == mode && <SelectCtrl label="Select Member" value={assignment.ID} options={memberoptions} onChange={(id) => { if('Speaker' == role) updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count,'manual':'','title':'','project':'','intro':'','maxtime':7,'display_time':'5 - 7 minutes'}); else updateAssignment({'ID':id,'name':getMemberName(id),'role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count})}} />}</>
             <>{'edit' == mode && assignment.ID == 0 && <div className="tmflexrow"><div className="tmflex30"><TextControl label="Or Add Guest" value={guests[roleindex]} onChange={ (id) => { let newguests = [...guests]; newguests[roleindex] = id; setGuests(newguests); } } /></div><div className="tmflex30"><br /><button className="tmform" onClick={() => { updateAssignment({'ID':guests[roleindex],'name':guests[roleindex] + ' (guest)','role': role,'roleindex': roleindex,'blockindex':blockindex,'start':start,'count':count}); let newguests = [...guests]; newguests[roleindex] = ''; setGuests(newguests);} } >Add</button></div></div>}</>

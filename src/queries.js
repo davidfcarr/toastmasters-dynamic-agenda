@@ -10,6 +10,13 @@ export function useBlocks(post_id,mode='',admin = false) {
     return useQuery(['blocks-data',post_id], fetchBlockData, { enabled: true, retry: 2, onSuccess, onError, refetchInterval: 60000, 'meta': mode });
 }
 
+export function useMemberEvaluation(member,project) {
+    function fetchMemberEvaluation(queryobj) {
+        return apiClient.get('member_evaluation?member='+member+'&project='+project);
+    }
+    return useQuery(['member-evaluation'], fetchMemberEvaluation, { enabled: true, retry: 2, refetchInterval: false});
+}
+
 async function updateAgendaPost (agenda) {
     return await apiClient.post('update_agenda', agenda);
 }

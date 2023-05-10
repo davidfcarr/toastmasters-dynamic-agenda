@@ -1,9 +1,10 @@
 import React, {useState, useEffect} from "react"
 import EvaluationTool from "./EvaluationTool.js";
-import {useBlocks} from './queries.js';
+import {useBlocks, useMemberEvaluation} from './queries.js';
 import { SanitizedHTML } from './SanitizedHTML.js';
 
 export function EvalWrapper(props) {
+    const {member, project} = props;
     let initialPost = 0;
     const [post_id, setPostId] = useState(initialPost);
     const [current_user_id,setCurrentUserId] = useState(0);
@@ -11,7 +12,15 @@ export function EvalWrapper(props) {
     const [scrollTo,setScrollTo] = useState('react-agenda');
     const [notification,setNotification] = useState(null);
     const [notificationTimeout,setNotificationTimeout] = useState(null);
-    const [evaluate,setEvaluate] = useState({'ID':'','name':'','project':'','manual':'','title':''});
+    const [evaluate,setEvaluate] = useState(props.evaluation);
+
+    if(member) {
+        console.log('member '+member);
+        const {data:memberevaldata,isLoading:memberevalIsLoading,isSuccess:memberevalIsSuccess} = useMemberEvaluation(member,project);
+        if(!memberevalIsLoading && memberevalIsSuccess) {
+
+        }
+    }
 
     function makeNotification(message, prompt = false, otherproperties = null) {
         if(notificationTimeout)
@@ -34,6 +43,7 @@ export function EvalWrapper(props) {
         access.scrollIntoView({behavior: 'smooth'}, true);
     }
 
+
 function ModeControl() {
     const modestyle = ('evaluation_admin' == mode) ? {'marginLeft':'200px;'} : {};
     return (
@@ -42,7 +52,6 @@ function ModeControl() {
         {'evaluation_demo' == mode && <p style={{"textAlign":"center"}}>This tool works even better as part of a <a href="https://toastmost.org">Toastmost.org</a> website! <a href="https://toastmost.org">Learn more</a></p>}
     </div>)
 }
-
 
 const { isLoading, isFetching, isSuccess, isError, data:axiosdata, error, refetch} = useBlocks(post_id);
 if(isError)

@@ -84,6 +84,14 @@ button.tmsmallbutton {
 	width: 150px;
 	float: right;
 }
+.evaluation-request {
+	width: 250px;
+	float: right;
+}
+.evaluation-request textarea {
+	width: 100%;
+}
+
 button.tmform:hover, button.tmsmallbutton:hover {
 	color: #004165;
 	background-color: #F2DF74;
@@ -301,3 +309,16 @@ min-height: 150px;
 	color: #fff;
 	background-color: #000;
 }
+
+.assignment {
+	display: grid;
+	grid-template-columns: 40% 60%;	
+}
+/*
+.assignment-role {
+	width: 40%;
+}
+.assignment-assigned {
+	width: 60%;
+}
+*/

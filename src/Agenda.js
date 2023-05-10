@@ -30,7 +30,7 @@ export default function Agenda(props) {
     const [scrollTo,setScrollTo] = useState('react-agenda');
     const [notification,setNotification] = useState(null);
     const [notificationTimeout,setNotificationTimeout] = useState(null);
-    const [evaluate,setEvaluate] = useState({'ID':'','name':'','project':'','manual':'','title':''});
+    const [evaluate,setEvaluate] = useState(props.evaluation);
 
     function scrolltoId(id){
         if(!id)
@@ -88,9 +88,11 @@ try {
 
 function ModeControl(props) {
     const {note} = props;
-    const modeoptions = [{'label': 'Sign Up', 'value':'signup'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
-    if(user_can('edit_post') || user_can('organize_agenda') || user_can('edit_signups'))
+    const modeoptions = [{'label': 'SignUp', 'value':'signup'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
+    if(user_can('edit_post') || user_can('organize_agenda') || user_can('edit_signups')) {
         modeoptions.push({'label': 'Edit', 'value':'edit'});
+        modeoptions.push({'label': 'Assign', 'value':'assign'});
+    }
     if(user_can('edit_post') || user_can('organize_agenda'))
         modeoptions.push({'label': 'Organize', 'value':'reorganize'});
     if(user_can('edit_post'))
@@ -114,6 +116,8 @@ function getHelpMessage() {
     return 'Sign yourself up for roles and enter/update speech details';
 if('edit' == mode)
     return 'Assign others to roles and edit their speech details. Rearrange or delete assignments.';
+if('assign' == mode)
+    return 'Assign others to roles (grid view)';
 if('suggest' == mode)
     return 'Nominate another member for a role -- they will get an email notification that makes it easy to say yes';
 if('evaluation' == mode)
@@ -179,6 +183,7 @@ if('settings' == mode)
             <h4>{date.toLocaleDateString('en-US',dateoptions)} {data.is_template && <span>(Template)</span>}</h4>
             <ModeControl makeNotification={makeNotification} />
             {!Array.isArray(data.blocksdata) && <p>Error loading agenda (<a href={window.location.href+'?revert=1'}>try alternate version</a>).</p>}
+            {('assign' == mode) && <div className="assignment" note="workaround for alignment issue"></div>} 
             {Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
                 datestring = date.toLocaleTimeString('en-US',{hour: "2-digit", minute: "2-digit",hour12:true});
                 if(block?.attrs?.time_allowed) {
@@ -189,6 +194,12 @@ if('settings' == mode)
                 }
                 if(!block.blockName)
                     return null;
+                    if('assign' == mode) {
+                        if ('wp4toastmasters/role' == block.blockName)
+                            return <RoleBlock makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode={mode} block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} />
+                        else
+                            return null;//in this mode, we only care about roles to assign                        
+                    } 
                     if('signup' == mode) {
                         if('wp4toastmasters/role' == block.blockName) {
                             if('speakers-evaluators' == showDetails && !['Speaker','Evaluator'].includes(block.attrs.role))
