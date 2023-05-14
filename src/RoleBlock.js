@@ -6,9 +6,10 @@ import Suggest from "./Suggest.js";
 import {Up, Down, Top, Close} from './icons.js';
 import apiClient from './http-common.js';
 import {useMutation, useQueryClient} from 'react-query';
+import { updatePreference } from "./queries.js";
 
 export default function RoleBlock (props) {
-    const {agendadata, mode, showDetails, blockindex, blocksdata, setMode, setScrollTo, block, makeNotification, post_id, setEvaluate} = props;
+    const {agendadata, mode, showDetails, blockindex, setMode, setScrollTo, block, makeNotification, post_id, setEvaluate} = props;
     const { assignments, attrs, memberoptions} = block;
     if(!attrs || !attrs.role)
         return null;
@@ -16,6 +17,7 @@ export default function RoleBlock (props) {
     
     const {current_user_id, current_user_name, request_evaluation} = agendadata;
     const [guests,setGuests] = useState([].fill('',0,attrs.count));
+    const {mutate:mutatePreference} = updatePreference(makeNotification);
 
     if(!attrs.role)
         return null;
@@ -228,7 +230,7 @@ const multiAssignmentMutation = useMutation(
 
             return (<div id={id} key={id}>
             {assignment.ID > 0 && (assignment.ID != current_user_id) && 'Speaker' == attrs.role && <p><a className="evaluation-link" href="#" onClick={() => {setEvaluate(assignment);setMode('evaluation')}} >Evaluation Form</a></p>}
-            {assignment.ID == current_user_id && 'Speaker' == attrs.role && <div className="evaluation-request"><strong>To request a digital evaluation, share this link</strong><br /><textarea rows="5" value={'Please use this link to evaluate my speech \n'+request_evaluation} /></div>}
+            {assignment.ID == current_user_id && 'Speaker' == attrs.role && <div className="evaluation-request"><strong>Digital evaluation link to share</strong><br /><textarea rows="4" value={'Please use this link to evaluate my speech \n'+request_evaluation} /> {!agendadata.second_language_feedback && <div className="evaluation-preference"><input type="checkbox" onClick={() => {mutatePreference({'key':'second_language_feedback','value': true});} } /> <a href="https://www.wp4toastmasters.com/knowledge-base/evaluation-prompts-for-non-native-speakers/" target="_blank">Prompts for non-native speakers</a></div>} </div>}
                 <h3>{role_label} {shownumber} {assignment.name} {assignment.ID > 0 && (('edit' == mode) || (current_user_id == assignment.ID)) && <button className="tmform" onClick={function(event) { let a = ('Speaker' == role) ? {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count,'intro':'','title':'','manual':'','project':'','maxtime':7,'display_time':'5 - 7 minutes'} : {'ID':0,'name':'','role': role,'blockindex':blockindex,'roleindex':roleindex,'start':start,'count':count}; updateAssignment(a)}} >Remove</button>} {}</h3>
                 {attrs.agenda_note && <p><em>{attrs.agenda_note}</em></p>}
                 <p>{assignment.ID == 0 && ('signup' == mode) && <><button className="tmform" onClick={function(event) {if('Speaker' == role) updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count,'maxtime':7,'display_time':'5 - 7 minutes'}); updateAssignment({'ID':current_user_id,'name':current_user_name,'role': role,'roleindex':roleindex,'blockindex':blockindex,'start':start,'count':count}) } }>Take Role</button></>} {('signup' == mode) && <>{(assignment.ID != current_user_id) && user_can('edit_signups') && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('edit')}}>Edit</button>} {assignment.ID == 0 && <button className="tmsmallbutton" onClick={() => {setScrollTo(id);setMode('suggest')}}>Suggest</button>}</>}</p>

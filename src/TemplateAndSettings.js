@@ -114,9 +114,9 @@ if(loading_icon)
             onChange={ () => {let newvalue = !allowOrganizeAgenda; setAllowOrganizeAgenda( newvalue ); permissionsMutation.mutate({'key':'organize_agenda','value':newvalue}); }} />
         
         <p><em>You can decide whether in addition to signing up for roles, members are able to edit assignments for others or insert/delete/move roles and content blocks on the agenda.</em></p></div>)}</>
-        {metaIsLoading && <p>Loading event metadata ...</p> }
-        {!metaIsLoading && !data.is_template && mdata && mdata.data && <EventDateTime post_id={data.post_id} metadata={mdata.data} metaMutate={metaMutate} makeNotification={makeNotification} />}
-        {data.is_template && !metaIsLoading && mdata && mdata.data && <TemplateSchedule post_id={data.post_id} metadata={mdata.data} metaMutate={metaMutate} makeNotification={makeNotification} />}
+        {!data.is_template && <p><a href={data.editor+'&tab=basics'} target="_blank">Edit Date, Time, and RSVP settings</a></p>}
+        {data.is_template && <p><a href={data.editor+'&tab=basics'} target="_blank">Edit Template Schedule and RSVP settings</a></p>}
+        <p><a href={data.editor} target="_blank">Open in WordPress Editor</a></p>
 </div>
     );
 }

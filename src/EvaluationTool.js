@@ -11,7 +11,7 @@ import { isError } from "react-query";
 
 export default function EvaluationTool(props) {
 const {makeNotification,data,evaluate,setEvaluate,scrolltoId,mode} = props;
-const {isLoading,isError,isFetching,data:evaldata} = useEvaluation(evaluate.project, onSuccess);
+const {isLoading,isError,isFetching,data:evaldata} = useEvaluation(evaluate.project, evaluate.ID, onSuccess);
 if(isError)
     return <p>Error loading evaluation data</p>
 const [path, setPath] = useState('Path Not Set');
@@ -25,6 +25,7 @@ const [responses,setResponses] = useState([]);
 const [notes,setNotes] = useState([]);
 const [form,setForm] = useState({});
 const [sent,setSent] = useState('');
+const [secondLanguagePrompt,setSecondLanguagePrompt] = useState('');
 
 let query = ((window.location.href.indexOf('?') == -1)) ? '?mode=evaluation' : '&mode=evaluation' ;
 let resetLink = ((window.location.href.indexOf('mode') == -1)) ? window.location.href + query : window.location.href;
@@ -36,7 +37,15 @@ useEffect(()=>{
 },[sent,form]);
 
 function onSuccess(e) {
-    setForm({'prompts':e.data.form,'intro':e.data.intro});
+    if(e.data.second_language_requested > 0)
+        {
+        console.log('adding second language prompts',e.data);
+        setForm({'prompts':e.data.form.concat(e.data.second_language),'intro':e.data.intro,'second_language_requested':true});
+        }
+    else {
+        console.log('no second language prompts',e.data);
+        setForm({'prompts':e.data.form,'intro':e.data.intro,'second_language_requested':false,'second_language':e.data.second_language});
+    }
 }
 
 if(isLoading || isFetching)
@@ -126,7 +135,15 @@ return (
                 openslots.push(index);
             return <div><EvaluationPrompt promptindex={index} response={responses[index]} note={notes[index]} setResponses={setResponses} setNotes={setNotes} item={item} /></div>
         })}
+        {secondLanguagePrompt && form.second_language.map((item,slindex) => {
+            let index = slindex + form.prompts.length;
+            if(!(responses[index] || notes[index]))
+                openslots.push(index);
+            return <div><EvaluationPrompt promptindex={index} response={responses[index]} note={notes[index]} setResponses={setResponses} setNotes={setNotes} item={item} /></div>
+        })}
         {openslots.length > 0 && <p><em>{openslots.length} prompts have not been answered</em></p>}
+        {form.second_language_requested && <p><em>The last four speaking-in-a-second-language prompts were requested by the speaker.</em></p>}
+        {!form.second_language_requested && !secondLanguagePrompt && <p><input type="checkbox" onClick={() => {setSecondLanguagePrompt(true); }} /> Add prompts for those speaking in a second language</p>}
         <p><button className="tmform" onClick={send}>Send</button></p>
     </div>
 )

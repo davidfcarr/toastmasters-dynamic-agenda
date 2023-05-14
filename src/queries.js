@@ -96,11 +96,27 @@ function onError(e) {
     console.log('error downloading data',e);
 }
 
-export function useEvaluation(project,evalSuccess) {
+export function useEvaluation(project,speaker_id,evalSuccess) {
     function fetchEvaluation(queryobj) {
-        const speakerparam = window.location.href.match(/speaker=([0-9]+)/);
-        const speaker_id = (speakerparam && speakerparam[1]) ? speakerparam[1] : '';
         return apiClient.get('evaluation/?project='+project+'&speaker='+speaker_id);
     }
     return useQuery(['evaluation',project], fetchEvaluation, { enabled: true, retry: 2, onSuccess: evalSuccess, onError, refetchInterval: false, refetchOnWindowFocus: false, });
+}
+
+export function updatePreference(makeNotification) {
+    async function postPreference (keyValue) {
+        return await apiClient.post('user_meta', keyValue);
+    }
+    
+    return useMutation(postPreference, {
+        onSuccess: (data, error, variables, context) => {
+            makeNotification(data.data.status);
+        },
+        onError: (err, variables, context) => {
+            makeNotification('error posting preference');
+            console.log('error posting preference',err);
+          },
+    
+          }
+)
 }

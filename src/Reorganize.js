@@ -14,7 +14,7 @@ import {updateAgenda} from './queries.js';
 import {SelectCtrl, NumberCtrl} from './Ctrl.js'
 
 export default function Reorganize(props) {
-    const {data, mode,post_id, makeNotification, ModeControl,showDetails, setMode, setScrollTo, setEvaluate} = props;
+    const {data, mode,post_id, makeNotification, ModeControl,showDetails, setMode, setScrollTo, setEvaluate, setPostId} = props;
     const [sync,setSync] = useState(true);
     const [editThis,setEditThis] = useState(-1);
     const {mutate:agendaMutate} = updateAgenda(post_id, makeNotification,Inserter);
@@ -208,7 +208,8 @@ function selectMove(source,destination) {
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectCtrl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{localedate} {data.is_template && <span>(Template)</span>} </h4>
-            <ModeControl note={'Based on time allotted, meeting will end at '+endtime} makeNotification={makeNotification} />
+            {data.has_template && <><p>Use the controls below to add or change roles or make other changes for this specific meeting.</p>{data.permissions.edit_post && <p><a href="#" onClick={ () => {makeNotification('Updating ...'); setPostId(data.has_template);} }>Switch to the <strong>event template</strong></a> if you want to make changes to multiple upcoming meeting agendas.</p>}{!data.permissions.edit_post && <p>You must have editing rights on the website to change the template for all upcoming events.</p>}</>}
+            {data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+data.post_id}>Create/Update</a> - copy changes to new and existing events</p>}            <ModeControl note={'Based on time allotted, meeting will end at '+endtime} makeNotification={makeNotification} />
             {data.blocksdata && data.blocksdata.map((block, blockindex) => {
                 if(!block.blockName)
                     return null;
