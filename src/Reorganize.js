@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useRef} from "react"
 import apiClient from './http-common.js';
-import { TextControl, ToggleControl } from '@wordpress/components';
+import { TextControl, ToggleControl, RadioControl } from '@wordpress/components';
 import RoleBlock from "./RoleBlock.js";
 import DeleteButton from "./Delete.js";
 import {SpeakerTimeCount} from "./SpeakerTimeCount.js";
@@ -33,6 +33,7 @@ export default function Reorganize(props) {
   
     function getMoveAbleBlocks () {
         let moveableBlocks = [];
+        if(data.blocksdata && Array.isArray(data.blocksdata))
         data.blocksdata.map((block, blockindex) => {
             moveableBlocks.push(blockindex);
         })
@@ -159,6 +160,7 @@ function selectMove(source,destination) {
     const dateoptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const localedate = date.toLocaleDateString('en-US',dateoptions);
     let endtime = '';
+    if(data.blocksdata && Array.isArray(data.blocksdata))
     data.blocksdata.map((block, blockindex) => {
         data.blocksdata[blockindex].datestring = date.toLocaleTimeString('en-US',{'hour': "2-digit", 'minute': "2-digit",'hour12':true});
         if(block?.attrs?.time_allowed) {
@@ -191,7 +193,8 @@ function selectMove(source,destination) {
     let movechoices = [{'label':'Where to?','value':''},{'label':'Move to Top','value':'top'}];
     let label = '';
     let choicesForBlock;
-    {data.blocksdata && data.blocksdata.map((block, blockindex) => {
+    
+    {data.blocksdata&& Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
         if(!block.blockName)
             return null;
         label = 'After: '+block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note');
@@ -210,7 +213,7 @@ function selectMove(source,destination) {
             <h4>{localedate} {data.is_template && <span>(Template)</span>} </h4>
             {data.has_template && <><p>Use the controls below to add or change roles or make other changes for this specific meeting.</p>{data.permissions.edit_post && <p><a href="#" onClick={ () => {makeNotification('Updating ...'); setPostId(data.has_template);} }>Switch to the <strong>event template</strong></a> if you want to make changes to multiple upcoming meeting agendas.</p>}{!data.permissions.edit_post && <p>You must have editing rights on the website to change the template for all upcoming events.</p>}</>}
             {data.is_template && <p><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+data.post_id}>Create/Update</a> - copy changes to new and existing events</p>}            <ModeControl note={'Based on time allotted, meeting will end at '+endtime} makeNotification={makeNotification} />
-            {data.blocksdata && data.blocksdata.map((block, blockindex) => {
+            {data.blocksdata && Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {
                 if(!block.blockName)
                     return null;
                 if(('speakers-evaluators' == showDetails) && ('wp4toastmasters/role' != block.blockName || !['Speaker','Evaluator'].includes(block.attrs.role)) ) {
@@ -236,9 +239,10 @@ function selectMove(source,destination) {
                       <h2>{block.blockName.replace(/^[^/]+\//,'').replace('agendanoterich2','agenda note')}: {block.attrs.role && <span>{block.attrs.role}</span>} {block.attrs.editable && <span>{block.attrs.editable}</span>} {block.innerHTML && <span>{makeExcerpt(block.innerHTML)}</span>}</h2>
                       </div>
                       {showDetails && 'wp4toastmasters/help' == block.blockName && <p>See the knowledge base article <a href="https://www.wp4toastmasters.com/knowledge-base/organize-agenda-tool/">Organize Agenda Tool</a> for video and written instructions.</p>}
+                      {showDetails && 'wp4toastmasters/speaker-evaluator' == block.blockName && <div><p>Displays Speaker-Evaluator Matches in a table on the printable and email versions of the agenda.</p><RadioControl label="Columns" selected={block.attrs?.columns} options={[{'label': '2 columns','value': '2'},{'label': 'Separate columns for Speaker, Path, Project, Title','value': '5'}]} onChange={(value) => {data.blocksdata[blockindex].attrs.columns = value; agendaMutate(data)} } /></div>}
                     {showDetails && 'wp4toastmasters/role' == block.blockName && (<div>
                         {(editThis == blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} /><RoleBlock makeNotification={makeNotification} showDetails={showDetails} agendadata={data} post_id={post_id} blockindex={blockindex} mode="edit" block={block}  setMode={setMode} setScrollTo={setScrollTo} setEvaluate={setEvaluate} /></>}
-                        {(editThis != blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} />{block.assignments.map((a) => <div>{a.name}</div>)}</>}
+                        {(editThis != blockindex) && <><ToggleControl label="Edit" checked={editThis == blockindex} onChange={() => {if(editThis == blockindex) setEditThis(-1); else setEditThis(blockindex); }} />{block.assignments && Array.isArray(block.assignments) && block.assignments.map((a) => <div>{a.name}</div>)}</>}
 
                             <SpeakerTimeCount block={block}  makeNotification={makeNotification} />
                     <div className="tmflexrow"><div className="tmflex30"><NumberCtrl label="Signup Slots" min="1" value={(block.attrs.count) ? block.attrs.count : 1} onChange={ (value) => { data.blocksdata[blockindex].attrs.count = value; if(['Speaker','Evaluator'].includes(block.attrs.role)) { data.blocksdata[blockindex].attrs.time_allowed = calcTimeAllowed(block.attrs); data.blocksdata = syncToEvaluator(data.blocksdata,value); } agendaMutate(data); }} /></div><div className="tmflex30"><NumberCtrl label="Time Allowed" value={(block.attrs?.time_allowed) ? block.attrs?.time_allowed : calcTimeAllowed(block.attrs)} onChange={ (value) => { data.blocksdata[blockindex].attrs.time_allowed = value; agendaMutate(data); }} /></div> {('Speaker' == block.attrs.role) && <div className="tmflex30"><NumberCtrl label="Padding Time" min="0" value={block.attrs.padding_time} onChange={(value) => {data.blocksdata[blockindex].attrs.padding_time = value; agendaMutate(data);}} /></div>}</div>
