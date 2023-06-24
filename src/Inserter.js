@@ -17,7 +17,7 @@ export function Inserter(props) {
     if(isError)
         return <p>Error loading Inserter.js roledata</p>
 
-    const blocklist = [{'label':'Select Note or Other Block','value':''},{'label': 'Agenda Note','value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'},{'label': 'Speaker/Evaluator Table', 'value':'wp4toastmasters/speaker-evaluator'},{'label': 'Track Absences', 'value':'wp4toastmasters/absences'}];    
+    const blocklist = [{'label':'Select Note or Other Block','value':''},{'label': 'Agenda Note (same week-to-week)','value':'wp4toastmasters/agendanoterich2'},{'label': 'Editable Note (changes week to week)', 'value':'wp4toastmasters/agendaedit'},{'label': 'Signup Note', 'value':'wp4toastmasters/signupnote'},{'label': 'Speaker/Evaluator Table', 'value':'wp4toastmasters/speaker-evaluator'},{'label': 'Track Absences', 'value':'wp4toastmasters/absences'}];    
 
     function InsertControl() {
         const [custom,setCustom] = useState('');

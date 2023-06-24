@@ -88,19 +88,27 @@ try {
 
 function ModeControl(props) {
     const {note} = props;
-    const modeoptions = [{'label': 'SignUp', 'value':'signup'},{'label': 'Suggest', 'value':'suggest'},{'label': 'Evaluation', 'value':'evaluation'}];
-    if(user_can('edit_post') || user_can('organize_agenda') || user_can('edit_signups')) {
-        modeoptions.push({'label': 'Edit', 'value':'edit'});
-        modeoptions.push({'label': 'Assign', 'value':'assign'});
-    }
-    if(user_can('edit_post') || user_can('organize_agenda'))
+    const modeoptions = [];
+    if(props.isTemplate) {
         modeoptions.push({'label': 'Organize', 'value':'reorganize'});
-    if(user_can('edit_post'))
         modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
-    const viewoptions = ('reorganize' == mode) ? [{'value':'all','label':'Show All'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'},{'value':'timed','label':'Timed Elements Only'}] : [{'value':'all','label':'Show Details'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'}];
+    } else {
+        modeoptions.push({'label': 'SignUp', 'value':'signup'});
+        modeoptions.push({'label': 'Suggest', 'value':'suggest'});
+        modeoptions.push({'label': 'Evaluation', 'value':'evaluation'});
+        if(user_can('edit_post') || user_can('organize_agenda') || user_can('edit_signups')) {
+            modeoptions.push({'label': 'Edit', 'value':'edit'});
+            modeoptions.push({'label': 'Assign', 'value':'assign'});
+        }
+        if(user_can('edit_post') || user_can('organize_agenda'))
+            modeoptions.push({'label': 'Organize', 'value':'reorganize'});
+        if(user_can('edit_post'))
+            modeoptions.push({'label': 'Template/Settings', 'value':'settings'});
+    }
+    const viewoptions = ('reorganize' == mode) ? [{'value':'all','label':'Show All'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'},{'value':'timed','label':'Timed Elements Only'}] : [{'value':'all','label':'Show Details'},{'value':'','label':'Outline View'},{'value':'speakers-evaluators','label':'Speakers and Evaluators Only'}];    
     return (
     <div id="fixed-mode-control">
-        {note && <p className="modenote">{note}</p>}
+        <p className="modenote">{props.isTemplate && <strong>Editing Template - <a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+props.post_id}>Create/Update</a> - </strong>} {note}</p>
         {notification && <div className="tm-notification tm-notification-success suggestion-notification"> <SanitizedHTML innerHTML={notification.message} /> {notification.prompt && <NextMeetingPrompt />} {notification.otherproperties && notification.otherproperties.map( (property) => {if(property.template_prompt) return <div className="next-meeting-prompt"><a target="_blank" href={'/wp-admin/edit.php?post_type=rsvpmaker&page=rsvpmaker_template_list&t='+property.template_prompt}>Create/Update</a> - copy content to new and existing events</div>} )} {isFetching && <em>Fetching fresh data ...</em>}</div>}
         {['signup','edit','reorganize'].includes(mode) && <div className="showtoggle"><SelectCtrl label="View Options"
             options={viewoptions}
@@ -156,7 +164,7 @@ if('settings' == mode)
     {
         return(
             <div className="agendawrapper">
-            <ModeControl />
+            <ModeControl isTemplate={(false !== data.is_template)} post_id={data.post_id} />
             <TemplateAndSettings makeNotification={makeNotification} setPostId={setPostId} user_can={user_can} data={data} />
             </div>
         );
@@ -181,7 +189,7 @@ if('settings' == mode)
         <div className="agendawrapper" id={"agendawrapper"+post_id}>
             <>{('rsvpmaker' != wpt_rest.post_type) && <SelectCtrl label="Choose Event" value={post_id} options={data.upcoming} onChange={(value) => {setPostId(parseInt(value)); makeNotification('Date changed, please wait for the date to change ...'); queryClient.invalidateQueries(['blocks-data',post_id]); refetch();}} />}</>
             <h4>{date.toLocaleDateString('en-US',dateoptions)} {data.is_template && <span>(Template)</span>}</h4>
-            <ModeControl makeNotification={makeNotification} />
+            <ModeControl makeNotification={makeNotification} isTemplate={(false !== data.is_template)} post_id={data.post_id} />
             {!Array.isArray(data.blocksdata) && <p>Error loading agenda (<a href={window.location.href+'?revert=1'}>try alternate version</a>).</p>}
             {('assign' == mode) && <div className="assignment" note="workaround for alignment issue"></div>} 
             {Array.isArray(data.blocksdata) && data.blocksdata.map((block, blockindex) => {

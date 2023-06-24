@@ -15,18 +15,18 @@
 		"start": "wp-scripts start"
 	},
 	"devDependencies": {
-		"@wordpress/scripts": "^25.0.0"
+		"@wordpress/scripts": "^25.5.1"
 	},
 	"dependencies": {
-		"@tinymce/tinymce-react": "^4.2.0",
-		"axios": "^1.2.2",
+		"@tinymce/tinymce-react": "^4.3.0",
+		"axios": "^1.4.0",
 		"clipboardy": "^3.0.0",
-		"dompurify": "^2.4.3",
+		"dompurify": "^2.4.5",
 		"react-awesome-button": "^7.0.5",
 		"react-beautiful-dnd": "^13.1.1",
-		"react-query": "^3.39.2",
+		"react-query": "^3.39.3",
 		"react-query-devtools": "^2.6.3",
-		"react-router": "^6.6.1",
-		"react-router-dom": "^6.6.1"
+		"react-router": "^6.13.0",
+		"react-router-dom": "^6.13.0"
 	}
 }

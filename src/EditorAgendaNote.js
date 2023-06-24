@@ -24,7 +24,7 @@ export function EditorAgendaNote(props) {
         }}
       />
       <p><button className="tmform" onClick={save}>Update</button></p>
-      <p><em>Agenda notes are the "stage directions" for your meeting.</em></p>
+      <p><em>Agenda notes are the "stage directions" for your meeting. For elements like meeting theme that change from meeting to meeting, use an Editable Note instead.</em></p>
     </>
   );
 }
